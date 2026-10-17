@@ -8,7 +8,7 @@
 | 소유 | 경로 | 규칙 |
 |---|---|---|
 | **도구** | `design/harness/` 전체, `.claude/agents/design-reviewer.md` | 도구 업데이트로 통째로 교체된다. 직접 고치지 않는다 |
-| **프로젝트** | `design/harness.toml`, 각 스코프의 `ARCHITECTURE.md`, `REQUIREMENTS.md`, `friction-log.md`, `decisions/`, `archive/` | 프로젝트가 쓴다. 도구는 명시적인 명령이나 규약 마이그레이션으로만 바꾼다 |
+| **프로젝트** | `design/harness.toml`, `design/harness-feedback.md`, 각 스코프의 `ARCHITECTURE.md`, `REQUIREMENTS.md`, `friction-log.md`, `decisions/`, `archive/` | 프로젝트가 쓴다. 도구는 명시적인 명령이나 규약 마이그레이션으로만 바꾼다 |
 | **공동** | `AGENTS.md`, `.githooks/pre-commit` | `design-harness:begin`과 `design-harness:end` 사이만 도구가 관리한다. 나머지는 프로젝트가 쓴다 |
 
 조정하고 싶은 값(임계값 등)은 `design/harness.toml`에서 바꾼다. 규칙 자체를 바꾸고 싶다면 도구 소유 파일을 고치지 말고 규약(design-harness)을 바꾼다.
@@ -99,6 +99,15 @@ apps/web/src/sync/design/    하위 시스템 스코프
 
 멈출 정도는 아니지만 설계와 어긋나는 타협을 했다면 해당 스코프의 `friction-log.md`에 한 줄 남긴다.
 같은 `D-ID`에 열린 항목이 `harness.toml`의 `friction_threshold`(기본 3개) 이상 쌓이면 재설계 신호로 보고 사람에게 알린다. 해결되면 행을 지운다.
+
+## 도구 피드백
+
+규약이나 도구 자체의 불편은 설계 마찰과 구분해서 남긴다. 마찰 로그는 이 프로젝트의 설계와 구현 사이의 문제이고, 도구 피드백은 design-harness에 대한 의견이다.
+예: 절차가 과했던 경우, 규칙이 모호했던 경우, 검사가 잘못 걸린 경우, 필요한 출력이 없었던 경우.
+
+- design-harness 이슈 트래커를 쓸 수 있으면 이슈로 올린다
+- 쓸 수 없으면 `design/harness-feedback.md`에 한 줄 남긴다(선택 파일). 이슈로 옮기거나 도구 쪽에서 반영되면 행을 지운다
+- 피드백을 남겼더라도 도구가 업데이트되기 전까지는 현재 규약을 따른다
 
 ## 설계 변경 절차
 
