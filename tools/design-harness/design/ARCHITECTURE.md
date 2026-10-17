@@ -7,7 +7,10 @@
 
 - **스코프**: `tools/design-harness`
 - **상위 스코프**: `/`
-- **결정 대기**: 없음
+- **결정 대기**:
+  - [ADR-0002: CLI 중심 패키지로 분리](decisions/0002-cli-package.md)
+  - [ADR-0003: 규약 버전, 업데이트, 마이그레이션](decisions/0003-versioning-and-update.md)
+  - [ADR-0004: 도입 경로와 에이전트 어댑터](decisions/0004-adoption-and-adapters.md)
 - **진행 중인 이행**: 없음
 - **구현 위치**: 분리 전이라 구현은 pray-everyday의 [design/harness/](../../../design/harness/)에 있다. 이 스코프에는 설계 문서만 둔다.
 
