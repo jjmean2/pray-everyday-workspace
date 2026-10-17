@@ -1,9 +1,13 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - 'apps/*'
+  - 'packages/*'
+
+allowBuilds:
+  # 설치 시 플랫폼용 실행 파일을 받는다. drizzle-kit, vite 등이 쓴다. 그 밖의 설치 스크립트는 기본으로 막는다.
+  esbuild: true
 
 peerDependencyRules:
   allowedVersions:
     # openapi-typescript 7.13은 peer로 TypeScript 5를 요구하지만, 저장소는 NestJS 12에 맞춰 TypeScript 6을 쓴다.
     # 타입 생성 결과에 문제가 없음을 확인했다(packages/api-contract build). openapi-typescript가 6을 지원하면 지운다.
-    "openapi-typescript>typescript": "6"
+    'openapi-typescript>typescript': '6'

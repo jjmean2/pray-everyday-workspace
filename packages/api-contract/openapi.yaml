@@ -14,12 +14,12 @@ paths:
       operationId: getHealth
       summary: 서버와 DB 상태
       responses:
-        "200":
+        '200':
           description: 서버가 동작 중이다
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Health"
+                $ref: '#/components/schemas/Health'
 components:
   schemas:
     Health:

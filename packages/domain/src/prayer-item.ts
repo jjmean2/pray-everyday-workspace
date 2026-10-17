@@ -5,7 +5,7 @@ export interface PrayerItemContent {
 }
 
 function isBlank(value: string | null): boolean {
-  return value === null || value.trim() === "";
+  return value === null || value.trim() === '';
 }
 
 export function hasPrayerItemContent(item: PrayerItemContent): boolean {
@@ -17,6 +17,6 @@ export function displayTitle(item: PrayerItemContent): string {
   if (!isBlank(item.title)) {
     return item.title!.trim();
   }
-  const firstLine = item.detail?.trim().split("\n")[0] ?? "";
+  const firstLine = item.detail?.trim().split('\n')[0] ?? '';
   return firstLine.trim();
 }
