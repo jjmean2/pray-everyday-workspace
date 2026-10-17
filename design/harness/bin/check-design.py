@@ -22,6 +22,11 @@ ADR_STATUSES = {"Proposed", "Accepted", "Superseded", "Rejected"}
 REQ_STATUSES = {"제안", "확정", "구현됨", "보류"}
 REQ_CLASSES = {"미분석", "적합", "확장", "재설계"}
 
+# 공동 소유 파일: {경로: 필수 여부}. design-harness:begin/end 블록만 도구가 관리한다.
+SHARED_FILES = {"AGENTS.md": True, ".githooks/pre-commit": False}
+BLOCK_BEGIN = re.compile(r"design-harness:begin v(\d+)")
+BLOCK_END = "design-harness:end"
+
 ROOT = None
 limits = {"architecture_max_lines": 400, "friction_threshold": 3}
 
@@ -192,6 +197,26 @@ def load_config():
     limits.update(config.get("limits", {}))
 
 
+def check_managed_blocks():
+    for name, required in SHARED_FILES.items():
+        path = ROOT / name
+        if not path.exists():
+            if required:
+                errors.append(f"{name}가 없습니다. design-harness 관리 블록이 들어 있어야 합니다")
+            continue
+        text = path.read_text(encoding="utf-8")
+        begins = BLOCK_BEGIN.findall(text)
+        if len(begins) != 1 or text.count(BLOCK_END) != 1:
+            errors.append(f"{name}: design-harness 관리 블록(begin/end)이 정확히 하나 있어야 합니다")
+            continue
+        if text.index(BLOCK_END) < BLOCK_BEGIN.search(text).start():
+            errors.append(f"{name}: design-harness:end가 begin보다 앞에 있습니다")
+        if int(begins[0]) != HARNESS_VERSION:
+            errors.append(
+                f"{name}: 관리 블록 버전은 {begins[0]}, 도구 버전은 {HARNESS_VERSION}입니다. 블록을 교체해야 합니다"
+            )
+
+
 def scope_chain(target):
     """루트부터 target을 포함하는 가장 가까운 스코프까지의 design/ 목록."""
     target = (Path.cwd() / target).resolve()
@@ -236,6 +261,7 @@ def main():
         report()
         return 0
 
+    check_managed_blocks()
     scopes = find_scopes()
     check_scope_registry(scopes)
     for design in scopes:
