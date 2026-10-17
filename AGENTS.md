@@ -4,7 +4,9 @@
 
 이 영역은 프로젝트가 직접 관리한다. 아래 design-harness 블록의 규칙에 더할 수는 있지만 뒤집지 않는다.
 
-- (아직 없음. 기술 스택, 빌드·테스트 명령, 코딩 규칙 등을 여기에 적는다)
+- pray-everyday는 서비스를 만드는 모노리포다. `design/`에는 이 서비스의 요구사항과 아키텍처만 둔다.
+- `design/harness/`, `design/harness.toml`, 아래 관리 블록은 design-harness 규약 v1의 설치본이다. 하네스 자체의 개발은 별도 저장소(design-harness)에서 하고, 여기서는 고치지 않는다.
+- (기술 스택, 빌드·테스트 명령, 코딩 규칙 등은 정해지면 여기에 적는다)
 
 <!-- design-harness:begin v1 -->
 <!-- 이 블록은 design-harness가 관리한다. 직접 고치지 말고, 값은 design/harness.toml에서, 추가 규칙은 블록 밖에서 정한다. -->
