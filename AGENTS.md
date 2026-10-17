@@ -86,4 +86,4 @@ design/
 
 - `python3 scripts/check-design.py`가 설계 문서의 정합성을 검사한다. 작업을 시작할 때 실행해서 결정 대기, 영향 분석이 필요한 항목, 경고를 확인한다.
 - pre-commit hook으로도 실행된다. 클론한 뒤 `git config core.hooksPath .githooks`로 활성화한다. 검사를 우회해 커밋하지 않는다.
-- 의미 있는 변경을 마치면 `design-reviewer` 에이전트로 diff가 설계와 어긋나는지 검토한다.
+- 의미 있는 변경을 마치면 [design/review-checklist.md](design/review-checklist.md)에 따라 diff가 설계와 어긋나는지 검토한다. 서브에이전트를 지원하는 도구라면 구현과 분리된 별도 에이전트로 실행한다(Claude Code: `design-reviewer`).
