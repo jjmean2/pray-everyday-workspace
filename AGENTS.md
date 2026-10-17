@@ -1,11 +1,14 @@
 # pray-everyday
 
+"쌓이는 기도" 서비스를 만드는 모노리포다.
+
 ## 프로젝트 규칙
 
 이 영역은 프로젝트가 직접 관리한다. 아래 design-harness 블록의 규칙에 더할 수는 있지만 뒤집지 않는다.
 
-- pray-everyday는 서비스를 만드는 모노리포다. `design/`에는 이 서비스의 요구사항과 아키텍처만 둔다.
-- `design/harness/`, `design/harness.toml`, 아래 관리 블록은 design-harness 규약 v1의 설치본이다. 하네스 자체의 개발은 별도 저장소(design-harness)에서 하고, 여기서는 고치지 않는다.
+- `design/`의 요구사항과 아키텍처는 "쌓이는 기도" 서비스의 것이다. 서비스와 무관한 설계를 두지 않는다.
+- 설계 관리는 외부 도구 design-harness의 규약 v1을 따른다. `design/harness/`, `design/harness.toml`, 아래 관리 블록은 그 설치본이며 이 저장소에서 고치지 않는다. 이 저장소는 design-harness를 개발하지 않는다.
+- 규약이나 도구 자체가 불편하면 [design/harness-feedback.md](design/harness-feedback.md)에 남긴다. 서비스 설계와 구현 사이의 마찰은 `friction-log.md`에 남긴다. 둘을 섞지 않는다. 피드백을 남겼더라도 도구가 업데이트되기 전까지는 현재 규약을 따른다.
 - (기술 스택, 빌드·테스트 명령, 코딩 규칙 등은 정해지면 여기에 적는다)
 
 <!-- design-harness:begin v1 -->
