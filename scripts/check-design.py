@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 """설계 문서 정합성 검사. 규칙은 design/README.md를 따른다.
 
-오류가 있으면 종료 코드 1로 끝난다. 경고와 안내는 커밋을 막지 않는다.
+사용법:
+  check-design.py                  전체 스코프 검사. 오류가 있으면 종료 코드 1
+  check-design.py context <경로>   그 경로에서 작업할 때 읽을 설계 문서와 확인할 항목 출력
+
+경고와 안내는 커밋을 막지 않는다.
 """
+import argparse
 import os
 import re
 import sys
@@ -140,6 +145,8 @@ def check_requirements(design):
 
 def check_friction(design):
     rows = [row for row in table_rows(design / "friction-log.md") if DATE.match(row[0])]
+    if rows:
+        notes.append(f"열린 마찰 {len(rows)}건: {rel(design)}/friction-log.md")
     counts = Counter(row[2] for row in rows if len(row) > 2 and row[2])
     for decision, count in counts.items():
         if count >= FRICTION_THRESHOLD:
@@ -161,18 +168,51 @@ def check_scope_registry(scopes):
             errors.append(f"{scope_path}: 루트 ARCHITECTURE.md의 스코프 목록에 등록되지 않은 스코프입니다")
 
 
-def main():
-    scopes = find_scopes()
-    check_scope_registry(scopes)
-    for design in scopes:
-        active = check_adrs(design)
-        check_architecture(design, active)
-        check_requirements(design)
-        check_friction(design)
+def scope_chain(target):
+    """루트부터 target을 포함하는 가장 가까운 스코프까지의 design/ 목록."""
+    target = (Path.cwd() / target).resolve()
+    if target != ROOT and ROOT not in target.parents:
+        sys.exit(f"저장소 밖의 경로입니다: {target}")
+    start = target if target.is_dir() else target.parent
+    dirs = [d for d in (start, *start.parents) if d == ROOT or ROOT in d.parents]
+    return [d / "design" for d in reversed(dirs) if (d / "design" / "ARCHITECTURE.md").exists()]
 
+
+def check_scope(design):
+    active = check_adrs(design)
+    check_architecture(design, active)
+    check_requirements(design)
+    check_friction(design)
+
+
+def report():
     for label, items in (("오류", errors), ("경고", warnings), ("안내", notes)):
         for item in items:
             print(f"[{label}] {item}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="설계 문서 정합성 검사")
+    sub = parser.add_subparsers(dest="command")
+    context = sub.add_parser("context", help="작업할 경로의 스코프 체인과 확인할 항목 출력")
+    context.add_argument("path")
+    args = parser.parse_args()
+
+    if args.command == "context":
+        chain = scope_chain(args.path)
+        for design in chain:
+            check_scope(design)
+        print("읽어야 할 설계 문서 (상위 → 하위):")
+        for design in chain:
+            print(f"  {rel(design / 'ARCHITECTURE.md')}")
+        report()
+        return 0
+
+    scopes = find_scopes()
+    check_scope_registry(scopes)
+    for design in scopes:
+        check_scope(design)
+    report()
     if not (errors or warnings or notes):
         print("설계 문서 검사: 문제 없음")
     return 1 if errors else 0
