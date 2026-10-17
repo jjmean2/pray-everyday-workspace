@@ -1,0 +1,21 @@
+# 로컬 개발용 서비스. 운영 DB는 관리형 PostgreSQL을 쓴다(D-11).
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pray}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pray}
+      POSTGRES_DB: ${POSTGRES_DB:-pray_everyday}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # PostgreSQL 18 이미지부터 데이터 볼륨은 /var/lib/postgresql에 마운트한다
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db-data:
