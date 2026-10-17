@@ -31,13 +31,16 @@ flowchart LR
   N == "나눔하기 (복사)" ==> S
 ```
 
-**코드 지도**: pnpm workspace와 Turborepo로 묶은 모노리포다. 애플리케이션과 아직 코드는 없다.
+**코드 지도**: pnpm workspace와 Turborepo로 묶은 모노리포다. 저장소 전체가 ESM과 TypeScript 6.0이다. 지금은 뼈대와 `/health`만 있다.
 
 | 경로 | 역할 |
 |---|---|
-| `apps/` | 실행되는 애플리케이션 (웹, 서버, 나중에 앱) |
-| `packages/` | 애플리케이션이 함께 쓰는 패키지 (도메인 규칙 등) |
+| `apps/web/` | 웹. TanStack Start(SPA 모드) + TanStack Query, Tailwind CSS. 서버는 `openapi-fetch`로 부르고, 개발 중에는 `/api`를 서버로 프록시한다 |
+| `apps/server/` | 서버. NestJS 12 + Drizzle 0.45 + PostgreSQL. 테이블 정의는 `src/database/schema.ts` |
+| `packages/api-contract/` | API 계약. `openapi.yaml`이 원본이고, 빌드할 때 TypeScript 타입을 생성한다 |
+| `packages/domain/` | 웹과 서버가 함께 쓰는 도메인 규칙 |
 | `design/` | 요구사항과 아키텍처 문서 |
+| `compose.yaml` | 로컬 개발용 PostgreSQL |
 
 ## 스코프 목록
 
@@ -154,7 +157,9 @@ flowchart LR
 - `apps/`와 `packages/` 안의 구체적인 패키지 구성
 - 앱 구현 방식: iOS와 Android 네이티브로 생각 중이다. 도메인과 동기화 로직을 플랫폼마다 구현할지, Kotlin Multiplatform 같은 공유 코어를 둘지는 앱을 시작할 때 정한다
 - 동기화 규칙의 언어 중립 테스트 벡터 (API는 OpenAPI로 명세하기로 했다, D-10). 네이티브 앱을 만든다면 필요하다
-- 서버에서 요청을 OpenAPI 명세에 맞게 검증하는 방식, 웹의 API 클라이언트 생성 방식
+- 서버에서 요청을 OpenAPI 명세에 맞게 검증하는 방식 (웹은 생성된 타입과 `openapi-fetch`를 쓴다)
+- 운영 환경에서 웹과 서버의 경로 구성 (개발 중에는 Vite가 `/api`를 서버로 프록시한다)
+- UI 컴포넌트 구성 (Base UI/shadcn은 첫 화면을 만들 때 설정한다)
 - 배포 대상 (운영 DB는 관리형 PostgreSQL 방향, D-11)
 - 응답 표시를 어디에 둘지 (기도제목, 이어진 기도, 별도 기록)
 - 노트 제목을 둘지, 기도한 시각을 사용자가 바꿀 수 있는지

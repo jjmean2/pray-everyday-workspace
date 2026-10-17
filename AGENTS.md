@@ -10,7 +10,11 @@
 - 설계 관리는 외부 도구 design-harness의 규약 v1을 따른다. `design/harness/`, `design/harness.toml`, 아래 관리 블록은 그 설치본이며 이 저장소에서 고치지 않는다. 이 저장소는 design-harness를 개발하지 않는다.
 - 규약이나 도구 자체가 불편하면 [design/harness-feedback.md](design/harness-feedback.md)에 남긴다. 서비스 설계와 구현 사이의 마찰은 `friction-log.md`에 남긴다. 둘을 섞지 않는다. 피드백을 남겼더라도 도구가 업데이트되기 전까지는 현재 규약을 따른다.
 - 모노리포: pnpm workspace + Turborepo. 실행되는 애플리케이션은 `apps/`, 함께 쓰는 패키지는 `packages/`에 둔다.
-- 명령: 설치 `pnpm install`, 전체 작업 `pnpm build` / `pnpm dev` / `pnpm lint` / `pnpm check-types` / `pnpm test` (Turborepo가 패키지별로 실행한다).
+- 명령: 설치 `pnpm install`, 전체 작업 `pnpm build` / `pnpm dev` / `pnpm lint` / `pnpm check-types` / `pnpm test` (Turborepo가 패키지별로 실행한다), 서식 `pnpm format`.
+- 로컬 개발: `.env.example`을 `.env`로 복사하고 `docker compose up -d`로 PostgreSQL을 띄운 뒤 `pnpm dev`. 웹은 http://localhost:5173, 서버는 http://localhost:3000.
+- API를 바꿀 때는 `packages/api-contract/openapi.yaml`을 먼저 고친다(D-10). 웹에는 비즈니스 로직과 DB 접근을 두지 않는다(D-09).
+- TanStack Start는 릴리스가 잦다. 설정이나 API를 쓰기 전에 기억에 의존하지 말고 최신 문서를 확인한다.
+- 의존성 설치 스크립트는 pnpm이 기본으로 막는다. 허용이 필요하면 `pnpm-workspace.yaml`의 `allowBuilds`에 이유와 함께 추가한다. 패키지가 배포하는 에이전트 skill(`pnpm approve`)은 사람의 승인 없이 승인하지 않는다.
 - 의존성을 추가할 때 pnpm의 최소 배포 기간 보호를 우회하지 않는다. `minimumReleaseAgeExclude`가 생기면 보호 기간을 통과한 버전으로 바꾼다.
 - (코딩 규칙 등은 정해지면 여기에 적는다)
 

@@ -4,3 +4,4 @@ pnpm-lock.yaml
 packages/api-contract/src/generated/
 # 설계 문서와 에이전트 지시는 표 정렬 등으로 diff가 커지지 않게 서식 도구를 적용하지 않는다
 *.md
+apps/web/src/routeTree.gen.ts
