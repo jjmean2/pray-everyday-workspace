@@ -1,6 +1,10 @@
 #!/bin/sh
-# 설계 문서 정합성 검사. 활성화: git config core.hooksPath .githooks
+# 활성화: git config core.hooksPath .githooks
+# 프로젝트의 다른 커밋 전 검사는 design-harness 블록 밖에 추가한다.
+
+# design-harness:begin v1 — 이 블록은 design-harness가 관리한다
 python3 design/harness/bin/check-design.py || {
   echo "설계 문서 검사에 실패했습니다. 위 오류를 고친 뒤 다시 커밋하세요."
   exit 1
 }
+# design-harness:end
