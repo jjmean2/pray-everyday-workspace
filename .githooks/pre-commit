@@ -1,0 +1,6 @@
+#!/bin/sh
+# 설계 문서 정합성 검사. 활성화: git config core.hooksPath .githooks
+python3 scripts/check-design.py || {
+  echo "설계 문서 검사에 실패했습니다. 위 오류를 고친 뒤 다시 커밋하세요."
+  exit 1
+}
