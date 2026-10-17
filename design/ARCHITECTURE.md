@@ -126,6 +126,7 @@ flowchart LR
 - 나눔을 고치거나 지울 수 있는 것은 작성자뿐이다. 리더는 모음에 넣거나 뺄 수만 있다
 - 모든 레코드의 ID는 클라이언트에서 만들고 바뀌지 않는다
 - 개인 데이터의 삭제는 삭제 표시(tombstone)로 한다
+- 클라이언트(웹, 앱)는 서버와 HTTP API로만 통신하고, 그 API는 OpenAPI 명세에 있다. 웹은 DB에 직접 접근하지 않는다
 
 ## 현재 유효한 결정
 
@@ -141,6 +142,9 @@ flowchart LR
 | D-06 | 클라이언트 생성 ID, 레코드별 버전과 수정 시각, 삭제 표시, 서버의 변경 순서를 웹 단계부터 갖춘다 | 필드 단위로 "마지막 수정이 이긴다"면 충분하다 | 같은 글을 문자 단위로 동시에 편집해 병합하는 것 | 충돌로 기록을 잃었다는 사례 | [ADR-0001](decisions/0001-baseline-v1-design.md) |
 | D-07 | TypeScript 모노리포. 웹은 React, Tailwind CSS, Base UI(shadcn), 서버는 NestJS, 앱의 기기 DB는 SQLite | 혼자 개발하고 웹을 먼저 만든다 | — | 앱 개발을 시작할 때(앱 프레임워크 결정) | [ADR-0001](decisions/0001-baseline-v1-design.md) |
 | D-08 | 서버 DB는 PostgreSQL, 서버의 ORM은 Drizzle이다. 동기화 쿼리는 Drizzle의 SQL 수준 API로 쓴다 | TypeScript ORM은 서버에서만 쓴다(앱은 네이티브 예정) | 앱과 서버가 같은 ORM 스키마를 공유하는 구조 | 앱을 TypeScript 기반으로 만들기로 할 때, 동기화 쿼리를 Drizzle로 표현하기 어려울 때 | [ADR-0002](decisions/0002-postgresql-and-drizzle.md) |
+| D-09 | 웹은 TanStack Start + TanStack Query다. SPA 모드로 시작하고 공유 페이지에만 라우트별 SSR을 켠다. 웹에는 비즈니스 로직을 두지 않는다 | 로그인 뒤 화면은 SSR이 필요 없다. 링크 미리보기가 필요한 페이지는 소수다 | 웹이 서버를 거치지 않고 DB나 비즈니스 규칙에 접근하는 구조 | SSR이 필요한 화면이 많아질 때, Start의 잦은 변경이 개발을 자주 막을 때 | [ADR-0003](decisions/0003-web-framework-api-contract-runtime.md) |
+| D-10 | API 계약은 `packages/api-contract`의 OpenAPI 명세가 원본이다(명세 우선). 개인 영역은 일반 API로 시작하고 D-06을 지키며, 동기화 API는 나중에 같은 명세에 더한다 | 모든 클라이언트(웹, 네이티브 앱)가 HTTP API로만 서버와 통신한다 | 명세 없이 구현에서 계약이 정해지는 것 | 명세와 구현이 자주 어긋날 때, 명세 작성이 개발 속도를 크게 늦출 때 | [ADR-0003](decisions/0003-web-framework-api-contract-runtime.md) |
+| D-11 | 로컬 개발은 Docker Compose로 PostgreSQL을 띄운다. 운영 DB는 관리형 PostgreSQL을 쓰는 방향이다 | 개발 기기에 Docker가 있다 | 운영 DB를 직접 컨테이너로 운영하는 것 | 배포 대상을 정할 때 | [ADR-0003](decisions/0003-web-framework-api-contract-runtime.md) |
 
 ## 아직 정하지 않은 것
 
@@ -149,7 +153,9 @@ flowchart LR
 - Drizzle 버전 (구현을 시작할 때 1.0 정식 출시 여부를 보고 정한다), 동기화 구현 방식
 - `apps/`와 `packages/` 안의 구체적인 패키지 구성
 - 앱 구현 방식: iOS와 Android 네이티브로 생각 중이다. 도메인과 동기화 로직을 플랫폼마다 구현할지, Kotlin Multiplatform 같은 공유 코어를 둘지는 앱을 시작할 때 정한다
-- 동기화 API와 규칙을 언어 중립적으로 명세할지 (OpenAPI, 언어 중립 테스트 벡터). 네이티브 앱을 만든다면 필요하다
+- 동기화 규칙의 언어 중립 테스트 벡터 (API는 OpenAPI로 명세하기로 했다, D-10). 네이티브 앱을 만든다면 필요하다
+- 서버에서 요청을 OpenAPI 명세에 맞게 검증하는 방식, 웹의 API 클라이언트 생성 방식
+- 배포 대상 (운영 DB는 관리형 PostgreSQL 방향, D-11)
 - 응답 표시를 어디에 둘지 (기도제목, 이어진 기도, 별도 기록)
 - 노트 제목을 둘지, 기도한 시각을 사용자가 바꿀 수 있는지
 - 동기화를 끄거나 로그아웃할 때 서버와 기기의 데이터 처리
