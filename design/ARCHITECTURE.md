@@ -139,8 +139,8 @@ flowchart LR
 | D-04 | 개인 영역은 로컬 우선, 커뮤니티 영역은 서버 중심이다. 두 영역은 나눔으로만 연결된다 | 커뮤니티 기능은 온라인에서 쓴다 | 오프라인에서 커뮤니티 글 쓰기와 모음 만들기 | 오프라인 커뮤니티 사용 요구 | [ADR-0001](decisions/0001-baseline-v1-design.md) |
 | D-05 | 앱 가입 전에는 기기 DB가, 동기화를 켜면 서버가 원본이다. 웹은 로그인과 동기화가 필수다 | 개인 노트를 여러 기기에서 동시에 고치는 일은 드물다 | 여러 사람이 같은 노트를 함께 편집하는 기능 | 공동 편집 요구, 동기화 충돌이 잦을 때 | [ADR-0001](decisions/0001-baseline-v1-design.md) |
 | D-06 | 클라이언트 생성 ID, 레코드별 버전과 수정 시각, 삭제 표시, 서버의 변경 순서를 웹 단계부터 갖춘다 | 필드 단위로 "마지막 수정이 이긴다"면 충분하다 | 같은 글을 문자 단위로 동시에 편집해 병합하는 것 | 충돌로 기록을 잃었다는 사례 | [ADR-0001](decisions/0001-baseline-v1-design.md) |
-| D-08 | 서버 DB는 PostgreSQL, 서버의 ORM은 Drizzle이다. 동기화 쿼리는 Drizzle의 SQL 수준 API로 쓴다 | TypeScript ORM은 서버에서만 쓴다(앱은 네이티브 예정) | 앱과 서버가 같은 ORM 스키마를 공유하는 구조 | 앱을 TypeScript 기반으로 만들기로 할 때, 동기화 쿼리를 Drizzle로 표현하기 어려울 때 | [ADR-0002](decisions/0002-postgresql-and-drizzle.md) |
 | D-07 | TypeScript 모노리포. 웹은 React, Tailwind CSS, Base UI(shadcn), 서버는 NestJS, 앱의 기기 DB는 SQLite | 혼자 개발하고 웹을 먼저 만든다 | — | 앱 개발을 시작할 때(앱 프레임워크 결정) | [ADR-0001](decisions/0001-baseline-v1-design.md) |
+| D-08 | 서버 DB는 PostgreSQL, 서버의 ORM은 Drizzle이다. 동기화 쿼리는 Drizzle의 SQL 수준 API로 쓴다 | TypeScript ORM은 서버에서만 쓴다(앱은 네이티브 예정) | 앱과 서버가 같은 ORM 스키마를 공유하는 구조 | 앱을 TypeScript 기반으로 만들기로 할 때, 동기화 쿼리를 Drizzle로 표현하기 어려울 때 | [ADR-0002](decisions/0002-postgresql-and-drizzle.md) |
 
 ## 아직 정하지 않은 것
 
