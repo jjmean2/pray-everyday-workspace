@@ -4,13 +4,18 @@
 - **날짜**: YYYY-MM-DD
 - **관련 요구사항**: R-NNN
 - **대체하는 것**: D-NN, ADR-NNNN (없으면 "없음")
-- **제안 계기**: 요구사항 변경 | 구현 중 발견 | 마찰 누적 | 리팩터링 | 사전 설계
+- **제안 계기**: 요구사항 변경 | 구현 중 발견 | 마찰 누적 | 리팩터링 | 사용 중 발견 | 사전 설계
 
 <!--
 상태 값: Proposed | Accepted | Superseded by ADR-NNNN | Rejected
 Superseded와 Rejected는 archive/decisions/로 옮긴다.
 ADR은 이유의 기록이다. 구속력은 승인 후 ARCHITECTURE.md에 반영된 내용에만 있다.
+되돌리기 어려운 결정에만 쓰고, 승인된 뒤에는 한 쪽 이내(요약, 맥락, 결정, 검토한 대안)가 되게 한다.
 -->
+
+## 요약
+
+(무엇을 결정하고 무엇이 바뀌는지 두세 문장)
 
 ## 맥락
 
@@ -27,7 +32,7 @@ ADR은 이유의 기록이다. 구속력은 승인 후 ARCHITECTURE.md에 반영
 
 ## ARCHITECTURE.md 반영안
 
-승인되면 아래 내용을 ARCHITECTURE.md의 "현재 유효한 결정" 표에 새 행으로 옮긴다.
+제안 단계에서만 쓴다. 승인되면 ARCHITECTURE.md로 옮기고 이 절과 "정리 대상"은 지운다.
 
 - **결정**:
 - **전제한 가정**:
