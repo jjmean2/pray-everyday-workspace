@@ -11,16 +11,19 @@ import argparse
 import os
 import re
 import sys
+import tomllib
 from collections import Counter
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
+HARNESS_VERSION = 1
+CONFIG_PATH = Path("design") / "harness.toml"
 PRUNE_DIRS = {".git", "node_modules", ".venv", "dist", "build", "archive", "harness"}
 ADR_STATUSES = {"Proposed", "Accepted", "Superseded", "Rejected"}
 REQ_STATUSES = {"제안", "확정", "구현됨", "보류"}
 REQ_CLASSES = {"미분석", "적합", "확장", "재설계"}
-ARCH_LINE_BUDGET = 400
-FRICTION_THRESHOLD = 3
+
+ROOT = None
+limits = {"architecture_max_lines": 400, "friction_threshold": 3}
 
 ADR_FILE = re.compile(r"^(\d{4})-.+\.md$")
 ADR_STATUS = re.compile(r"^-\s*\*\*상태\*\*:\s*(\S+)", re.MULTILINE)
@@ -117,8 +120,9 @@ def check_architecture(design, active_adrs):
             notes.append(f"결정 대기: {rel(path)}")
 
     lines = text.count("\n") + 1
-    if lines > ARCH_LINE_BUDGET:
-        warnings.append(f"{rel(arch)}: {lines}줄입니다. {ARCH_LINE_BUDGET}줄을 넘으면 스코프 분리를 검토하세요")
+    budget = limits["architecture_max_lines"]
+    if lines > budget:
+        warnings.append(f"{rel(arch)}: {lines}줄입니다. {budget}줄을 넘으면 스코프 분리를 검토하세요")
 
 
 def check_requirements(design):
@@ -149,7 +153,7 @@ def check_friction(design):
         notes.append(f"열린 마찰 {len(rows)}건: {rel(design)}/friction-log.md")
     counts = Counter(row[2] for row in rows if len(row) > 2 and row[2])
     for decision, count in counts.items():
-        if count >= FRICTION_THRESHOLD:
+        if count >= limits["friction_threshold"]:
             warnings.append(f"{rel(design)}/friction-log.md: {decision}에 마찰이 {count}건 쌓였습니다. 재설계를 검토하세요")
 
 
@@ -166,6 +170,26 @@ def check_scope_registry(scopes):
         scope_path = rel(design.parent)
         if f"`{scope_path}`" not in registry:
             errors.append(f"{scope_path}: 루트 ARCHITECTURE.md의 스코프 목록에 등록되지 않은 스코프입니다")
+
+
+def find_root():
+    """현재 디렉터리에서 위로 올라가며 design/harness.toml이 있는 저장소 루트를 찾는다."""
+    cwd = Path.cwd().resolve()
+    for directory in (cwd, *cwd.parents):
+        if (directory / CONFIG_PATH).exists():
+            return directory
+    sys.exit(f"{CONFIG_PATH.as_posix()}를 찾을 수 없습니다. design-harness를 도입한 저장소에서 실행하세요.")
+
+
+def load_config():
+    with open(ROOT / CONFIG_PATH, "rb") as file:
+        config = tomllib.load(file)
+    version = config.get("harness", {}).get("version")
+    if version != HARNESS_VERSION:
+        errors.append(
+            f"{CONFIG_PATH.as_posix()}: 프로젝트 규약 버전은 {version}, 도구 버전은 {HARNESS_VERSION}입니다. 마이그레이션이 필요합니다"
+        )
+    limits.update(config.get("limits", {}))
 
 
 def scope_chain(target):
@@ -197,6 +221,10 @@ def main():
     context = sub.add_parser("context", help="작업할 경로의 스코프 체인과 확인할 항목 출력")
     context.add_argument("path")
     args = parser.parse_args()
+
+    global ROOT
+    ROOT = find_root()
+    load_config()
 
     if args.command == "context":
         chain = scope_chain(args.path)

@@ -1,0 +1,12 @@
+# design-harness 프로젝트 설정. 이 파일은 프로젝트가 소유한다.
+# design/harness/ 아래는 도구가 소유하므로 직접 고치지 말고, 조정할 값은 여기에 둔다.
+
+[harness]
+# 이 프로젝트의 설계 문서가 따르는 규약 버전. 도구의 버전과 다르면 마이그레이션이 필요하다.
+version = 1
+
+[limits]
+# ARCHITECTURE.md가 이 줄 수를 넘으면 스코프 분리를 권한다
+architecture_max_lines = 400
+# 같은 결정(D-ID)에 열린 마찰이 이만큼 쌓이면 재설계를 권한다
+friction_threshold = 3
