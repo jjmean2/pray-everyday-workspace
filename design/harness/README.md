@@ -1,6 +1,6 @@
 # 설계 문서 체계
 
-사람과 Agent가 함께 쓰는 설계 문서의 운영 절차다. 항상 지켜야 하는 핵심 규칙은 [AGENTS.md](../AGENTS.md)에 있고, 이 문서는 절차의 세부를 다룬다.
+사람과 Agent가 함께 쓰는 설계 문서의 운영 절차다. 항상 지켜야 하는 핵심 규칙은 [AGENTS.md](../../AGENTS.md)에 있고, 이 문서는 절차의 세부를 다룬다.
 
 ## 원칙
 
@@ -82,7 +82,7 @@ apps/web/src/sync/design/    하위 시스템 스코프
 ## 요구사항 변경
 
 - **문구 수준의 수정**: 제자리에서 고치고 설계 분류를 `미분석`으로 되돌린다
-- **의미가 바뀌는 변경**: 새 ID를 만든다. 옛 항목은 [archive/requirements.md](archive/requirements.md)로 옮기고 처리 칸에 `대체 → R-NNN`을 적는다
+- **의미가 바뀌는 변경**: 새 ID를 만든다. 옛 항목은 [archive/requirements.md](../archive/requirements.md)로 옮기고 처리 칸에 `대체 → R-NNN`을 적는다
 - **폐기**: archive로 옮기고 처리 칸에 `폐기`와 이유를 적는다
 - **사람이 직접 요구사항을 추가하거나 고칠 때**: 설계 분류를 `미분석`으로 두면 Agent가 다음 작업 전에 영향 분석을 한다
 
@@ -90,6 +90,6 @@ apps/web/src/sync/design/    하위 시스템 스코프
 
 `decisions/`에는 결정 대기 중인 ADR과 현재 결정의 근거가 되는 ADR만 남긴다.
 `ARCHITECTURE.md`가 더 이상 링크하지 않는 `Accepted` ADR은 `archive/decisions/`로 옮긴다.
-`scripts/check-design.py`가 후보를 경고로 알려 준다. 큰 설계 변경을 마친 뒤에 정리한다.
+`bin/check-design.py`가 후보를 경고로 알려 준다. 큰 설계 변경을 마친 뒤에 정리한다.
 
 archive는 지우지 않는다. 기각 이력이 같은 제안의 반복을 막는다. 하지만 설계 변경을 제안할 때가 아니면 읽지 않는다.

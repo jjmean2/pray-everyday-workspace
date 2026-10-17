@@ -6,8 +6,8 @@
 ## 절차
 
 1. 리뷰 대상 diff를 확인한다. 별도 지정이 없으면 `git diff HEAD`로 커밋되지 않은 변경을 본다.
-2. 변경된 각 경로에 대해 `python3 scripts/check-design.py context <경로>`를 실행하고, 출력된 `ARCHITECTURE.md`를 모두 읽는다. 해당 스코프의 `friction-log.md`도 읽는다.
-3. `python3 scripts/check-design.py`를 실행해 문서 정합성 결과를 참고한다.
+2. 변경된 각 경로에 대해 `python3 design/harness/bin/check-design.py context <경로>`를 실행하고, 출력된 `ARCHITECTURE.md`를 모두 읽는다. 해당 스코프의 `friction-log.md`도 읽는다.
+3. `python3 design/harness/bin/check-design.py`를 실행해 문서 정합성 결과를 참고한다.
 4. 아래 항목을 점검한다.
 
 구속력은 `ARCHITECTURE.md`와 `REQUIREMENTS.md`에만 있다. ADR은 이유를 확인할 때만 읽는다. `archive/`는 읽지 않는다.

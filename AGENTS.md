@@ -9,7 +9,7 @@
 ## 설계 문서
 
 설계 문서는 스코프 단위로 관리한다. 스코프는 `design/` 폴더를 가진 디렉터리이고, 루트 `design/`은 시스템 전체 스코프다.
-절차의 세부(스코프 생성, ID, 설계 변경, 요구사항 변경, 정리)는 [design/README.md](design/README.md)에 있다.
+절차의 세부(스코프 생성, ID, 설계 변경, 요구사항 변경, 정리)는 [design/harness/README.md](design/harness/README.md)에 있다.
 
 ```
 design/
@@ -23,7 +23,7 @@ design/
 ### 무엇을 읽는가
 
 어떤 경로에서 작업하기 전에, 루트부터 그 경로를 포함하는 가장 가까운 스코프까지 각 `design/ARCHITECTURE.md`를 차례로 읽는다.
-`python3 scripts/check-design.py context <경로>`를 실행하면 읽을 문서 목록과 결정 대기, 영향 분석이 필요한 요구사항, 열린 마찰이 나온다. 작업을 시작할 때 먼저 실행한다.
+`python3 design/harness/bin/check-design.py context <경로>`를 실행하면 읽을 문서 목록과 결정 대기, 영향 분석이 필요한 요구사항, 열린 마찰이 나온다. 작업을 시작할 때 먼저 실행한다.
 상위 스코프의 규칙은 하위에도 적용된다. 하위 스코프는 규칙을 더할 수만 있고 뒤집을 수 없다.
 
 ### 무엇을 따르는가
@@ -85,6 +85,6 @@ design/
 
 ## 6. 검증
 
-- `python3 scripts/check-design.py`가 설계 문서의 정합성을 검사한다. 작업을 시작할 때 실행해서 결정 대기, 영향 분석이 필요한 항목, 경고를 확인한다.
+- `python3 design/harness/bin/check-design.py`가 설계 문서의 정합성을 검사한다. 작업을 시작할 때 실행해서 결정 대기, 영향 분석이 필요한 항목, 경고를 확인한다.
 - pre-commit hook으로도 실행된다. 클론한 뒤 `git config core.hooksPath .githooks`로 활성화한다. 검사를 우회해 커밋하지 않는다.
-- 의미 있는 변경을 마치면 [design/review-checklist.md](design/review-checklist.md)에 따라 diff가 설계와 어긋나는지 검토한다. 서브에이전트를 지원하는 도구라면 구현과 분리된 별도 에이전트로 실행한다(Claude Code: `design-reviewer`).
+- 의미 있는 변경을 마치면 [design/harness/review-checklist.md](design/harness/review-checklist.md)에 따라 diff가 설계와 어긋나는지 검토한다. 서브에이전트를 지원하는 도구라면 구현과 분리된 별도 에이전트로 실행한다(Claude Code: `design-reviewer`).

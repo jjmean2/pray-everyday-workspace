@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""설계 문서 정합성 검사. 규칙은 design/README.md를 따른다.
+"""설계 문서 정합성 검사. 규칙은 design/harness/README.md를 따른다.
 
 사용법:
   check-design.py                  전체 스코프 검사. 오류가 있으면 종료 코드 1
@@ -14,8 +14,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-PRUNE_DIRS = {".git", "node_modules", ".venv", "dist", "build", "archive", "templates"}
+ROOT = Path(__file__).resolve().parents[3]
+PRUNE_DIRS = {".git", "node_modules", ".venv", "dist", "build", "archive", "harness"}
 ADR_STATUSES = {"Proposed", "Accepted", "Superseded", "Rejected"}
 REQ_STATUSES = {"제안", "확정", "구현됨", "보류"}
 REQ_CLASSES = {"미분석", "적합", "확장", "재설계"}
