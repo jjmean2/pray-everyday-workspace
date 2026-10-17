@@ -9,7 +9,10 @@
 - `design/`의 요구사항과 아키텍처는 "쌓이는 기도" 서비스의 것이다. 서비스와 무관한 설계를 두지 않는다.
 - 설계 관리는 외부 도구 design-harness의 규약 v1을 따른다. `design/harness/`, `design/harness.toml`, 아래 관리 블록은 그 설치본이며 이 저장소에서 고치지 않는다. 이 저장소는 design-harness를 개발하지 않는다.
 - 규약이나 도구 자체가 불편하면 [design/harness-feedback.md](design/harness-feedback.md)에 남긴다. 서비스 설계와 구현 사이의 마찰은 `friction-log.md`에 남긴다. 둘을 섞지 않는다. 피드백을 남겼더라도 도구가 업데이트되기 전까지는 현재 규약을 따른다.
-- (기술 스택, 빌드·테스트 명령, 코딩 규칙 등은 정해지면 여기에 적는다)
+- 모노리포: pnpm workspace + Turborepo. 실행되는 애플리케이션은 `apps/`, 함께 쓰는 패키지는 `packages/`에 둔다.
+- 명령: 설치 `pnpm install`, 전체 작업 `pnpm build` / `pnpm dev` / `pnpm lint` / `pnpm check-types` / `pnpm test` (Turborepo가 패키지별로 실행한다).
+- 의존성을 추가할 때 pnpm의 최소 배포 기간 보호를 우회하지 않는다. `minimumReleaseAgeExclude`가 생기면 보호 기간을 통과한 버전으로 바꾼다.
+- (코딩 규칙 등은 정해지면 여기에 적는다)
 
 <!-- design-harness:begin v1 -->
 <!-- 이 블록은 design-harness가 관리한다. 직접 고치지 말고, 값은 design/harness.toml에서, 추가 규칙은 블록 밖에서 정한다. -->
