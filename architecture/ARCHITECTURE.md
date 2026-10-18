@@ -34,8 +34,8 @@ flowchart LR
 
 | 경로 | 역할 |
 |---|---|
-| `apps/web/` | 웹. TanStack Start(SPA 모드) + TanStack Query, Tailwind CSS. 서버는 `openapi-fetch`로 부르고, 개발 중에는 `/api`를 서버로 프록시한다 |
-| `apps/server/` | 서버. NestJS 12 + Drizzle 0.45 + PostgreSQL. 테이블 정의는 `src/database/schema.ts` |
+| `apps/web/` | 웹. TanStack Start(SPA 모드) + TanStack Query, Tailwind CSS. 서버는 `openapi-fetch`로 부르고, 개발 중에는 `/api`를 서버로 프록시한다. 기능별 코드는 `src/features/` |
+| `apps/server/` | 서버. NestJS 12 + Drizzle 0.45 + PostgreSQL. 테이블 정의는 `src/database/schema.ts`, 마이그레이션은 `drizzle/`, 인증은 `src/auth/`. 앱 설정(쿠키, 오류 형식)은 `src/app.setup.ts`에 모아 서버와 e2e가 함께 쓴다 |
 | `packages/api-contract/` | API 계약. `openapi.yaml`이 원본이고, 빌드할 때 TypeScript 타입을 생성한다 |
 | `packages/domain/` | 웹과 서버가 함께 쓰는 도메인 규칙 |
 | `architecture/` | 요구사항, 아키텍처, 컨벤션 문서와 결정 기록 |
