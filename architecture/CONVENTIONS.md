@@ -10,8 +10,8 @@ lint와 formatter로 강제할 수 있는 규칙은 그 도구에 두고, 에이
 
 ## API와 웹
 
-- API를 바꿀 때는 `packages/api-contract/openapi.yaml`을 먼저 고친다. 구현에서 계약을 정하지 않는다. 이유: [ADR-0003](decisions/0003-web-framework-api-contract-runtime.md)
-- 웹에는 비즈니스 로직과 DB 접근을 두지 않는다. 웹은 서버 API만 부른다. 이유: [ADR-0003](decisions/0003-web-framework-api-contract-runtime.md)
+- API를 바꿀 때는 `packages/api-contract/openapi.yaml`을 먼저 고치고, 생성된 타입으로 서버와 웹을 구현한다. 이유: [ADR-0003](decisions/0003-web-framework-api-contract-runtime.md)
+- TanStack Start의 server functions에는 비즈니스 로직을 두지 않는다. SSR에 필요한 조회도 API 계약을 거쳐 서버를 부른다. 클라이언트와 서버의 책임은 [영역과 모듈의 경계](ARCHITECTURE.md#영역과-모듈의-경계)를 따른다. 이유: [ADR-0003](decisions/0003-web-framework-api-contract-runtime.md)
 
 ## 의존성
 
