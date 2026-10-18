@@ -30,7 +30,10 @@ export class ProblemDetailsFilter implements ExceptionFilter {
 
 export function toProblem(exception: unknown): Problem {
   if (!(exception instanceof HttpException)) {
-    return problem(HttpStatus.INTERNAL_SERVER_ERROR);
+    // body-parser의 PayloadTooLargeError(413)처럼 자기 4xx 상태를 가진 오류는 그 상태를 쓴다.
+    // 메시지는 내부 정보일 수 있어 담지 않는다
+    const clientStatus = clientErrorStatus(exception);
+    return problem(clientStatus ?? HttpStatus.INTERNAL_SERVER_ERROR);
   }
   const status = exception.getStatus();
   const body = exception.getResponse();
@@ -41,6 +44,20 @@ export function toProblem(exception: unknown): Problem {
         ? (body as { message: string }).message
         : undefined;
   return problem(status, message);
+}
+
+function clientErrorStatus(error: unknown): number | undefined {
+  if (typeof error !== 'object' || error === null) {
+    return undefined;
+  }
+  const { status, statusCode } = error as {
+    status?: unknown;
+    statusCode?: unknown;
+  };
+  const value = typeof status === 'number' ? status : statusCode;
+  return typeof value === 'number' && value >= 400 && value < 500
+    ? value
+    : undefined;
 }
 
 function problem(status: number, detail?: string): Problem {

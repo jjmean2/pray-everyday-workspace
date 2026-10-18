@@ -86,7 +86,8 @@ export class DevAuthController {
 }
 
 /**
- * 명세의 DevLoginRequest를 직접 검사한다.
+ * 명세의 DevLoginRequest를 명세 그대로 직접 검사한다. 명세에 없는 규칙(공백 다듬기 등)을 더하지 않는다.
+ * 길이는 JSON Schema처럼 코드 포인트로 센다.
  * 요청 검증 방식이 아직 열린 질문이라 정할 때까지의 타협이다(notes/architecture.md의 [타협]).
  */
 export function parseDevLoginRequest(body: unknown): DevLoginRequest {
@@ -101,11 +102,13 @@ export function parseDevLoginRequest(body: unknown): DevLoginRequest {
   if (typeof displayName !== 'string') {
     throw new BadRequestException('displayName은 문자열이어야 합니다');
   }
-  const trimmed = displayName.trim();
-  if (trimmed.length < 1 || trimmed.length > 50) {
+  // JSON Schema의 maxLength는 코드 포인트로 센다. 명세와 같게 세려고 일부러 코드 포인트로 나눈다
+  // oxlint-disable-next-line typescript/no-misused-spread
+  const length = [...displayName].length;
+  if (length < 1 || length > 50) {
     throw new BadRequestException(
       'displayName은 1자 이상 50자 이하여야 합니다',
     );
   }
-  return { displayName: trimmed };
+  return { displayName };
 }

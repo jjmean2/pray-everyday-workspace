@@ -43,7 +43,11 @@ export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      await api.POST('/auth/logout');
+      // 서버가 세션을 지웠을 때만 로그아웃으로 보여 준다. 기준은 서버에 있다
+      const { response } = await api.POST('/auth/logout');
+      if (!response.ok) {
+        throw new Error('로그아웃하지 못했습니다');
+      }
     },
     onSuccess: () => {
       queryClient.setQueryData(currentUserQuery.queryKey, null);

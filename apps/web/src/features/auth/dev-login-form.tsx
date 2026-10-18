@@ -25,13 +25,12 @@ export function DevLoginForm() {
           value={displayName}
           onChange={(event) => setDisplayName(event.target.value)}
           placeholder="예: 리더, 회원1"
-          maxLength={50}
           className="flex-1 rounded border px-3 py-2 text-sm"
           aria-label="표시 이름"
         />
         <button
           type="submit"
-          disabled={login.isPending || displayName.trim() === ''}
+          disabled={login.isPending || displayName === ''}
           className="rounded bg-gray-900 px-4 py-2 text-sm text-white disabled:opacity-50"
         >
           로그인
