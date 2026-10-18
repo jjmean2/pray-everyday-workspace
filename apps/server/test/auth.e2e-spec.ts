@@ -23,7 +23,7 @@ async function createApp(devLogin: boolean): Promise<INestApplication<App>> {
     imports: [DatabaseModule, AuthModule.register({ devLogin })],
   }).compile();
   const app = moduleRef.createNestApplication<INestApplication<App>>();
-  configureApp(app);
+  configureApp(app, { devLogin });
   await app.init();
   return app;
 }
@@ -208,10 +208,17 @@ describe('개발용 로그인이 꺼져 있으면 (e2e)', () => {
     await app.close();
   });
 
-  it('엔드포인트가 없다', async () => {
-    await request(app.getHttpServer())
+  it.each([
+    ['맞는 본문', { displayName: '리더' }],
+    ['틀린 본문', { displayName: '' }],
+  ])('엔드포인트가 없다 (%s도 404)', async (_label, body) => {
+    // 검사기도 개발용 엔드포인트를 모른다. 틀린 본문에 400을 주면 엔드포인트가 있는 것처럼 보인다
+    const response = await request(app.getHttpServer())
       .post('/auth/dev/login')
-      .send({ displayName: '리더' })
+      .send(body)
       .expect(404);
+    expect(response.headers['content-type']).toMatch(
+      /^application\/problem\+json/,
+    );
   });
 });
