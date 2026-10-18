@@ -15,7 +15,7 @@ export default defineConfig({
     },
   },
   plugins: [
-    // D-09: SPA 모드로 시작한다. 공유 페이지는 나중에 라우트별 SSR을 켠다.
+    // SPA 모드로 시작하고, 공유 페이지는 나중에 라우트별 SSR을 켠다(ARCHITECTURE의 "기술 스택과 실행 환경").
     tanstackStart({ spa: { enabled: true } }),
     // React 플러그인은 Start 플러그인 뒤에 둔다
     viteReact(),
