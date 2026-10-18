@@ -45,6 +45,26 @@ describe('toProblem', () => {
     });
   });
 
+  it('명세 검사 오류는 어느 부분이 왜 틀렸는지 detail에 담는다', () => {
+    const invalid = Object.assign(new Error('request/body must ...'), {
+      status: 400,
+      errors: [
+        {
+          path: '/body/displayName',
+          message: 'must NOT have fewer than 1 characters',
+        },
+        { path: '/body/role', message: 'must NOT have additional properties' },
+      ],
+    });
+    expect(toProblem(invalid)).toEqual({
+      type: 'about:blank',
+      title: 'Bad Request',
+      status: 400,
+      detail:
+        '/body/displayName must NOT have fewer than 1 characters; /body/role must NOT have additional properties',
+    });
+  });
+
   it('5xx 상태를 가진 일반 오류는 500으로 둔다', () => {
     const upstream = Object.assign(new Error('upstream'), { status: 502 });
     expect(toProblem(upstream).status).toBe(500);

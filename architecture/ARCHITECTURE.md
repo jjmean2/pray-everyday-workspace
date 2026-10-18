@@ -35,7 +35,7 @@ flowchart LR
 | 경로 | 역할 |
 |---|---|
 | `apps/web/` | 웹. TanStack Start(SPA 모드) + TanStack Query, Tailwind CSS. 서버는 `openapi-fetch`로 부르고, 개발 중에는 `/api`를 서버로 프록시한다. 기능별 코드는 `src/features/` |
-| `apps/server/` | 서버. NestJS 12 + Drizzle 0.45 + PostgreSQL. 테이블 정의는 `src/database/schema.ts`, 마이그레이션은 `drizzle/`, 인증은 `src/auth/`. 앱 설정(쿠키, 오류 형식)은 `src/app.setup.ts`에 모아 서버와 e2e가 함께 쓴다 |
+| `apps/server/` | 서버. NestJS 12 + Drizzle 0.45 + PostgreSQL. 테이블 정의는 `src/database/schema.ts`, 마이그레이션은 `drizzle/`, 인증은 `src/auth/`. 앱 설정(쿠키, 명세 검사, 오류 형식)은 `src/app.setup.ts`에 모아 서버와 e2e가 함께 쓴다 |
 | `packages/api-contract/` | API 계약. `openapi.yaml`이 원본이고, 빌드할 때 TypeScript 타입을 생성한다 |
 | `packages/domain/` | 웹과 서버가 함께 쓰는 도메인 규칙 |
 | `architecture/` | 요구사항, 아키텍처, 컨벤션 문서와 결정 기록 |
@@ -226,14 +226,16 @@ flowchart LR
 
 API 계약은 `packages/api-contract`의 OpenAPI 명세가 원본이다(명세 우선). 개인 영역은 일반 API로 시작하고 동기화의 기반 장치(클라이언트 생성 ID, 버전, 삭제 표시)를 지키며, 동기화 API는 나중에 같은 명세에 더한다.
 
+서버는 실행 중에 이 명세로 모든 요청을 검사하고, 개발과 테스트에서는 응답도 검사한다. 엔드포인트마다 검증 코드를 두지 않는다. 명세에 없는 경로는 404다. 모든 엔드포인트는 따로 적지 않은 오류를 `default` 응답(Problem Details)으로 선언한다.
+
 **감당하는 요구**: [웹 사용](REQUIREMENTS.md#웹-사용), [플랫폼](REQUIREMENTS.md#플랫폼)
 
 **가정과 한계**
 - 전제한 것: 모든 클라이언트(웹, 네이티브 앱)가 HTTP API로만 서버와 통신한다
 - 감당하지 못하는 것: 명세 없이 구현에서 계약이 정해지는 것
-- 다시 볼 계기: 명세와 구현이 자주 어긋날 때, 명세 작성이 개발 속도를 크게 늦출 때
+- 다시 볼 계기: 명세와 구현이 자주 어긋날 때, 명세 작성이 개발 속도를 크게 늦출 때, 명세 검사기가 NestJS나 Express 업그레이드를 막을 때
 
-**이유**: [ADR-0003](decisions/0003-web-framework-api-contract-runtime.md)
+**이유**: [ADR-0003](decisions/0003-web-framework-api-contract-runtime.md), [ADR-0006](decisions/0006-api-요청과-응답을-명세로-실행-중에-검사.md)
 
 ## 불변식
 

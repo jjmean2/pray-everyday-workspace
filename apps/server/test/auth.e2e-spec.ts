@@ -163,12 +163,37 @@ describe('인증 (e2e)', () => {
     expect(rows).toHaveLength(0);
   });
 
-  it('명세에 맞지 않는 요청은 Problem Details로 400', async () => {
-    const response = await request(app.getHttpServer())
-      .post('/auth/dev/login')
-      .send({ displayName: '' })
-      .expect(400);
-    expect(response.body).toMatchObject({ status: 400 });
+  describe('요청은 명세(DevLoginRequest)로 검사한다', () => {
+    it.each([
+      ['빈 이름', { displayName: '' }, '/body/displayName'],
+      ['51자', { displayName: '가'.repeat(51) }, '/body/displayName'],
+      ['문자열이 아님', { displayName: 3 }, '/body/displayName'],
+      ['필드 없음', {}, 'displayName'],
+      ['명세에 없는 필드', { displayName: '리더', role: 'admin' }, 'role'],
+    ])('%s이면 Problem Details로 400', async (_label, body, mentions) => {
+      const response = await request(app.getHttpServer())
+        .post('/auth/dev/login')
+        .send(body)
+        .expect(400);
+      expect(response.headers['content-type']).toMatch(
+        /^application\/problem\+json/,
+      );
+      expect(response.body).toMatchObject({
+        status: 400,
+        title: 'Bad Request',
+      });
+      expect(response.body.detail).toContain(mentions);
+    });
+
+    it('명세 그대로 받는다: 공백을 다듬지 않고, 길이는 코드 포인트로 센다', async () => {
+      const spaced = `  ${uniqueName()}  `;
+      const first = await login(spaced);
+      expect(first.response.body.displayName).toBe(spaced);
+
+      const emoji50 = `${'🙏'.repeat(42)}${randomUUID().slice(0, 8)}`;
+      const second = await login(emoji50);
+      expect(second.response.body.displayName).toBe(emoji50);
+    });
   });
 });
 

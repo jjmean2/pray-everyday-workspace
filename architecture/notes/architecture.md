@@ -10,7 +10,6 @@
 - 동기화 구현 방식(직접 구현 또는 동기화 엔진)
 - 앱 구현 방식: iOS와 Android 네이티브로 생각 중이다. 도메인과 동기화 로직을 플랫폼마다 구현할지, Kotlin Multiplatform 같은 공유 코어를 둘지는 앱을 시작할 때 정한다
 - 동기화 규칙의 언어 중립 테스트 벡터. 네이티브 앱을 만든다면 필요하다
-- 서버에서 요청을 OpenAPI 명세에 맞게 검증하는 방식(웹은 생성된 타입과 `openapi-fetch`를 쓴다)
 - 운영 환경에서 웹과 서버의 경로 구성(개발 중에는 Vite가 `/api`를 서버로 프록시한다)
 - UI 컴포넌트 구성(Base UI/shadcn은 첫 화면을 만들 때 설정한다)
 - 배포 대상(운영 DB는 관리형 PostgreSQL 방향)
@@ -24,4 +23,3 @@
 
 구현 중 설계와 어긋나 타협한 지점. 이 꼴로 적는다: `- [타협] YYYY-MM-DD 무엇을 어떻게 타협했나 (관련: [설계 절](../ARCHITECTURE.md#앵커))`
 같은 설계 절에 쌓이면 `design-harness check`가 재설계를 검토하라고 알린다. 해결되면 지운다.
-- [타협] 2026-10-18 요청을 명세에 맞게 검증하는 방식을 아직 정하지 않아, 개발용 로그인의 요청 본문(DevLoginRequest)을 컨트롤러에서 직접 검사한다(`apps/server/src/auth/dev-auth.controller.ts`의 parseDevLoginRequest). 서버 응답도 명세와 대조하지 않고 생성된 타입에만 기댄다. 요청 본문을 받는 API가 늘기 전에 요청과 응답의 검증 방식을 정하고 바꾼다 (관련: [API 계약](../ARCHITECTURE.md#api-계약))
