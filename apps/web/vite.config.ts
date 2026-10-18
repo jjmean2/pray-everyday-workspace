@@ -5,7 +5,9 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   server: {
-    port: 5173,
+    // Vite 기본 포트(5173)는 다른 프로젝트와 자주 겹쳐서 고정 포트를 쓴다. 쓰고 있으면 다른 포트로 옮기지 않고 실패한다
+    port: 6102,
+    strictPort: true,
     proxy: {
       // 로컬 개발에서 /api 요청은 NestJS 서버(3000)로 보낸다. 운영의 경로 구성은 배포 대상과 함께 정한다.
       '/api': {

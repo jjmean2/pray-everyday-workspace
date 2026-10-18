@@ -10,7 +10,7 @@
 - 설계 관리는 외부 도구 design-harness(문서 버전 0.1)를 따른다. 이 저장소는 design-harness를 개발하지 않는다. `architecture/harness/`와 아래 관리 블록은 부트스트랩한 구조라 고쳐도 되지만, 규약 자체가 불편하면 고치기 전에 [architecture/harness-feedback.md](architecture/harness-feedback.md)에 남긴다. 서비스 설계와 구현 사이의 타협은 `architecture/notes/architecture.md`에 `[타협]`으로 남긴다. 둘을 섞지 않는다.
 - 0.x 동안 design-harness의 깨지는 변경은 이 저장소에서 직접 고친다.
 - 명령: 설치 `pnpm install`, 전체 작업 `pnpm build` / `pnpm dev` / `pnpm lint` / `pnpm check-types` / `pnpm test` (Turborepo가 패키지별로 실행한다), 서식 `pnpm format`.
-- 로컬 개발: `.env.example`을 `.env`로 복사하고 `docker compose up -d`로 PostgreSQL을 띄운 뒤 `pnpm dev`. 웹은 http://localhost:5173, 서버는 http://localhost:3000.
+- 로컬 개발: `.env.example`을 `.env`로 복사하고 `docker compose up -d`로 PostgreSQL을 띄운 뒤 `pnpm dev`. 웹은 http://localhost:6102(고정. 쓰고 있으면 실패한다), 서버는 http://localhost:3000.
 - 구현 규칙(API 명세 우선, 웹의 책임, 의존성 정책)은 `architecture/CONVENTIONS.md`를 따른다.
 - TanStack Start는 릴리스가 잦다. 설정이나 API를 쓰기 전에 기억에 의존하지 말고 최신 문서를 확인한다.
 - 패키지가 배포하는 에이전트 skill(`pnpm approve`)은 사람의 승인 없이 승인하지 않는다.
