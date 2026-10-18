@@ -3,4 +3,9 @@ export type { components, operations, paths } from './generated/schema.js';
 
 import type { components } from './generated/schema.js';
 
-export type Health = components['schemas']['Health'];
+type Schemas = components['schemas'];
+
+export type Health = Schemas['Health'];
+export type CurrentUser = Schemas['CurrentUser'];
+export type DevLoginRequest = Schemas['DevLoginRequest'];
+export type Problem = Schemas['Problem'];

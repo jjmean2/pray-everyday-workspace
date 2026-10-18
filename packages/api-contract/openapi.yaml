@@ -3,15 +3,20 @@ info:
   title: 쌓이는 기도 API
   version: 0.1.0
   description: |
-    웹, 서버, 네이티브 앱이 함께 따르는 API 계약이다(D-10). 이 명세가 원본이고,
-    API를 바꿀 때는 이 파일을 먼저 고친다. TypeScript 타입은 이 명세에서 생성한다.
+    웹, 서버, 네이티브 앱이 함께 따르는 API 계약이다(architecture/ARCHITECTURE.md의 "API 계약").
+    이 명세가 원본이고, API를 바꿀 때는 이 파일을 먼저 고친다. TypeScript 타입은 이 명세에서 생성한다.
+    오류 응답은 모두 RFC 9457 Problem Details(application/problem+json)다.
 servers:
   - url: http://localhost:3000
     description: 로컬 개발
+tags:
+  - name: health
+  - name: auth
 paths:
   /health:
     get:
       operationId: getHealth
+      tags: [health]
       summary: 서버와 DB 상태
       responses:
         '200':
@@ -20,7 +25,75 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Health'
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: 현재 로그인한 사용자
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: 로그인한 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: 지금 세션을 지우고 세션 쿠키를 비운다
+      description: 로그인하지 않은 상태에서 불러도 204를 돌려준다.
+      responses:
+        '204':
+          description: 로그아웃했다
+  /auth/dev/login:
+    post:
+      operationId: devLogin
+      tags: [auth]
+      summary: 개발용 로그인
+      description: |
+        로컬 개발과 자동 테스트 전용이다. 서버가 DEV_LOGIN=true일 때만 있고, 운영 환경에는 없다.
+        표시 이름으로 로그인하고, 처음 쓰는 이름이면 사용자를 만든다. 세션 쿠키를 준다.
+      x-dev-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DevLoginRequest'
+      responses:
+        '200':
+          description: 로그인했다. 세션 쿠키가 Set-Cookie로 온다
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: session
+      description: 로그인할 때 서버가 주는 세션 쿠키(HttpOnly)
+  responses:
+    BadRequest:
+      description: 요청이 명세에 맞지 않는다
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: 로그인하지 않았거나 세션이 만료됐다
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
   schemas:
     Health:
       type: object
@@ -32,3 +105,38 @@ components:
         database:
           type: string
           enum: [up, down]
+    CurrentUser:
+      type: object
+      required: [id, displayName, profileImageUrl]
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        profileImageUrl:
+          type: [string, 'null']
+          format: uri
+    DevLoginRequest:
+      type: object
+      required: [displayName]
+      additionalProperties: false
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 50
+    Problem:
+      description: RFC 9457 Problem Details
+      type: object
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          description: 문제의 종류를 가리키는 URI. 따로 정의하지 않은 문제는 about:blank
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string

@@ -24,3 +24,4 @@
 
 구현 중 설계와 어긋나 타협한 지점. 이 꼴로 적는다: `- [타협] YYYY-MM-DD 무엇을 어떻게 타협했나 (관련: [설계 절](../ARCHITECTURE.md#앵커))`
 같은 설계 절에 쌓이면 `design-harness check`가 재설계를 검토하라고 알린다. 해결되면 지운다.
+- [타협] 2026-10-18 요청을 명세에 맞게 검증하는 방식을 아직 정하지 않아, 개발용 로그인의 요청 본문(DevLoginRequest)을 컨트롤러에서 직접 검사한다(`apps/server/src/auth/dev-auth.controller.ts`의 parseDevLoginRequest). 요청 본문을 받는 API가 늘기 전에 검증 방식을 정하고 바꾼다 (관련: [API 계약](../ARCHITECTURE.md#api-계약))
