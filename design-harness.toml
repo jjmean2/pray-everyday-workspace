@@ -1,0 +1,19 @@
+# design-harness 프로젝트 설정. 이 파일은 프로젝트가 소유한다.
+
+[harness]
+# 이 프로젝트가 따르는 문서 버전(MAJOR.MINOR). design-harness upgrade가 올린다.
+docs_version = "0.1"
+# 스코프 폴더 이름. 저장소의 모든 스코프가 같은 이름을 쓴다.
+scope_dir = "architecture"
+
+[limits]
+# ARCHITECTURE.md가 이 줄 수를 넘으면 스코프 분리를 권한다
+architecture_max_lines = 400
+# 같은 설계 절에 열린 타협(notes의 [타협])이 이만큼 쌓이면 재설계를 권한다
+friction_threshold = 3
+# 해결되지 않은 '불일치 (결정 필요)' 표시가 이 날수를 넘으면 경고한다
+inconsistency_days = 30
+# 마지막 정합성 감사(git의 '정합성 감사:' 커밋)로부터 이 날수가 지나면 알린다
+audit_days = 90
+# 항목이 남은 notes 파일이 이 날수 동안 바뀌지 않으면 알린다
+notes_days = 30

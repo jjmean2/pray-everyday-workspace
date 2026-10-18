@@ -2,8 +2,12 @@
 # 활성화: git config core.hooksPath .githooks
 # 프로젝트의 다른 커밋 전 검사는 design-harness 블록 밖에 추가한다.
 
-# design-harness:begin v1 — 이 블록은 design-harness가 관리한다
-python3 design/harness/bin/check-design.py || {
+# design-harness:begin v0.1 — 이 블록은 design-harness가 들여놓았다. upgrade가 새 판의 변경을 합친다
+if ! command -v design-harness >/dev/null 2>&1; then
+  echo "design-harness가 없습니다. 설치 방법: architecture/harness/README.md의 '도구 설치와 업그레이드'"
+  exit 1
+fi
+design-harness check || {
   echo "설계 문서 검사에 실패했습니다. 위 오류를 고친 뒤 다시 커밋하세요."
   exit 1
 }
