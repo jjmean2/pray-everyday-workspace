@@ -1,53 +1,28 @@
-import { useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { DevLoginForm } from '../features/auth/dev-login-form';
-import { currentUserQuery, useLogout } from '../features/auth/queries';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { v7 as uuidv7 } from 'uuid';
+import { RequireLogin } from '../features/auth/require-login';
+import { NotesList } from '../features/notes/notes-list';
 
 export const Route = createFileRoute('/')({
   component: Home,
 });
 
 function Home() {
-  const currentUser = useQuery(currentUserQuery);
-  const logout = useLogout();
+  const navigate = useNavigate();
 
   return (
-    <main className="mx-auto max-w-xl p-8">
-      <h1 className="text-2xl font-bold">쌓이는 기도</h1>
-
-      {currentUser.isPending && (
-        <p className="mt-4 text-sm text-gray-500">확인 중…</p>
-      )}
-
-      {currentUser.isError && (
-        <p className="mt-4 text-sm text-red-600">
-          서버에 연결할 수 없습니다: {currentUser.error.message}
-        </p>
-      )}
-
-      {currentUser.isSuccess && currentUser.data !== null && (
-        <div className="mt-4 flex items-center justify-between">
-          <p>
-            <span className="font-medium">{currentUser.data.displayName}</span>
-            님, 안녕하세요.
-          </p>
-          <button
-            type="button"
-            onClick={() => logout.mutate()}
-            disabled={logout.isPending}
-            className="rounded border px-3 py-1 text-sm"
-          >
-            로그아웃
-          </button>
-        </div>
-      )}
-
-      {currentUser.isSuccess && currentUser.data === null && (
-        <>
-          <p className="mt-4 text-sm text-gray-600">로그인이 필요합니다.</p>
-          {import.meta.env.DEV && <DevLoginForm />}
-        </>
-      )}
-    </main>
+    <RequireLogin>
+      <button
+        type="button"
+        // 노트 ID는 클라이언트가 만든다. 내용을 쓰기 전에는 저장되지 않는다
+        onClick={() =>
+          void navigate({ to: '/notes/$noteId', params: { noteId: uuidv7() } })
+        }
+        className="mb-6 w-full rounded bg-gray-900 py-3 text-sm font-medium text-white"
+      >
+        새 기도 노트
+      </button>
+      <NotesList />
+    </RequireLogin>
   );
 }
