@@ -20,6 +20,7 @@ import {
   prayerItems,
   sortKeyOrder,
 } from '../database/schema.js';
+import { isCheckViolation } from '../database/errors.js';
 import { liveTagIds, onlyLive } from '../personal/tag-filter.js';
 import { decodeNoteCursor, encodeNoteCursor } from './note-cursor.js';
 
@@ -79,6 +80,24 @@ export class NotesService {
 
   /** 노트를 기도제목과 함께 통째로 저장한다(ADR-0007). 빠진 기도제목은 삭제 표시한다. */
   async save(userId: string, noteId: string, input: NoteInput): Promise<Note> {
+    try {
+      return await this.saveInTransaction(userId, noteId, input);
+    } catch (error) {
+      // 명세 검사(JS 정규식)와 DB 제약(PostgreSQL 정규식)의 공백 판정이 다른 드문 경우에도 400으로 돌려준다
+      if (isCheckViolation(error)) {
+        throw new BadRequestException(
+          '기도제목은 제목과 상세 중 하나 이상에 공백이 아닌 글자가 있어야 합니다',
+        );
+      }
+      throw error;
+    }
+  }
+
+  private async saveInTransaction(
+    userId: string,
+    noteId: string,
+    input: NoteInput,
+  ): Promise<Note> {
     return this.db.transaction(async (tx) => {
       const [existing] = await tx
         .select()

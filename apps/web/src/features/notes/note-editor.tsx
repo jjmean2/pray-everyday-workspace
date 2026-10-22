@@ -26,9 +26,16 @@ function toLocalInput(iso: string): string {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
-export function NoteEditor({ initial }: { initial: Draft }) {
+export function NoteEditor({
+  initial,
+  persisted,
+}: {
+  initial: Draft;
+  /** 서버에 이미 있는 노트인가 */
+  persisted: boolean;
+}) {
   const [draft, setDraft] = useState(initial);
-  const { status, error } = useAutosave(draft);
+  const { status, error, cancel } = useAutosave(draft, { persisted });
   const deleteNote = useDeleteNote(draft.id);
   const navigate = useNavigate();
   const titleRefs = useRef(new Map<string, HTMLInputElement>());
@@ -71,6 +78,8 @@ export function NoteEditor({ initial }: { initial: Draft }) {
   }
 
   async function onDelete() {
+    // 지운 뒤 화면을 떠날 때의 자동 저장이 노트를 되살리지 않게 먼저 멈춘다
+    cancel();
     await deleteNote.mutateAsync();
     await navigate({ to: '/' });
   }

@@ -35,5 +35,7 @@ function LoadedEditor({ noteId }: { noteId: string }) {
     note.data === null
       ? newDraft(noteId, new Date(), uuidv7())
       : fromNote(note.data, uuidv7());
-  return <NoteEditor key={noteId} initial={initial} />;
+  return (
+    <NoteEditor key={noteId} initial={initial} persisted={note.data !== null} />
+  );
 }

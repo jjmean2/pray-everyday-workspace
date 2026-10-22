@@ -20,11 +20,3 @@ export async function liveTagIds(
 export function onlyLive(tagIds: string[], live: Set<string>): string[] {
   return tagIds.filter((id) => live.has(id));
 }
-
-/** PostgreSQL의 고유 제약 위반인지. Drizzle은 드라이버 오류를 cause로 감싼다. */
-export function isUniqueViolation(error: unknown): boolean {
-  const code =
-    (error as { code?: unknown }).code ??
-    (error as { cause?: { code?: unknown } }).cause?.code;
-  return code === '23505';
-}

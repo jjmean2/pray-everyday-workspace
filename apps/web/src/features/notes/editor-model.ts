@@ -1,8 +1,7 @@
 // 노트 에디터의 상태와 편집 동작. 화면과 분리해 테스트한다.
 // 기도제목의 경계는 사용자가 행 단위로 정하고(Enter로 새 기도제목), 순서는 분수 인덱스다(ADR-0007).
 import type { Note, NoteInput } from '@pray/api-contract';
-import { hasPrayerItemContent } from '@pray/domain';
-import { generateKeyBetween } from 'fractional-indexing';
+import { hasPrayerItemContent, isBlank, sortKeyBetween } from '@pray/domain';
 
 export interface DraftItem {
   id: string;
@@ -33,7 +32,7 @@ export function newDraft(id: string, now: Date, firstItemId: string): Draft {
     prayedAt: now.toISOString(),
     memo: '',
     tagIds: [],
-    items: [newItem(firstItemId, generateKeyBetween(null, null))],
+    items: [newItem(firstItemId, sortKeyBetween(null, null))],
   };
 }
 
@@ -55,7 +54,7 @@ export function fromNote(note: Note, emptyItemId: string): Draft {
     // 끝에 빈 행을 하나 둬서 바로 이어 쓸 수 있게 한다
     items: [
       ...items,
-      newItem(emptyItemId, generateKeyBetween(last?.sortKey ?? null, null)),
+      newItem(emptyItemId, sortKeyBetween(last?.sortKey ?? null, null)),
     ],
   };
 }
@@ -68,7 +67,7 @@ export function insertItemAfter(
 ): { draft: Draft; index: number } {
   const before = draft.items[index]?.sortKey ?? null;
   const after = draft.items[index + 1]?.sortKey ?? null;
-  const item = newItem(id, generateKeyBetween(before, after));
+  const item = newItem(id, sortKeyBetween(before, after));
   const items = [...draft.items];
   items.splice(index + 1, 0, item);
   return { draft: { ...draft, items }, index: index + 1 };
@@ -103,9 +102,9 @@ export function savableItems(draft: Draft): DraftItem[] {
   return draft.items.filter((item) => hasPrayerItemContent(toContent(item)));
 }
 
-/** 메모도 기도제목도 없으면 저장하지 않는다(열기만 한 새 노트가 쌓이지 않게). */
+/** 메모도 기도제목도 없다. 아직 서버에 없는 새 노트는 이때 저장하지 않는다(열기만 한 노트가 쌓이지 않게). */
 export function isEmptyDraft(draft: Draft): boolean {
-  return draft.memo.trim() === '' && savableItems(draft).length === 0;
+  return isBlank(draft.memo) && savableItems(draft).length === 0;
 }
 
 export function toNoteInput(draft: Draft): NoteInput {

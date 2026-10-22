@@ -4,7 +4,8 @@ export interface PrayerItemContent {
   detail: string | null;
 }
 
-function isBlank(value: string | null): boolean {
+/** 비었거나 공백뿐인 글. */
+export function isBlank(value: string | null): boolean {
   return value === null || value.trim() === '';
 }
 

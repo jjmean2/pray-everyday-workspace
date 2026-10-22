@@ -8,7 +8,7 @@ import type { Tag, TagInput, TagList } from '@pray/api-contract';
 import { and, asc, eq, isNull, sql } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module.js';
 import { nextPersonalChangeSeq, tags } from '../database/schema.js';
-import { isUniqueViolation } from '../personal/tag-filter.js';
+import { isUniqueViolation } from '../database/errors.js';
 
 type TagRow = typeof tags.$inferSelect;
 

@@ -59,7 +59,9 @@ export function useSaveNote(noteId: string) {
       }
       return data;
     },
-    onSuccess: async () => {
+    onSuccess: async (note) => {
+      // 다시 열 때 저장된 내용으로 시작하게 한다(조회 캐시는 저절로 갱신되지 않는다)
+      queryClient.setQueryData(noteQuery(noteId).queryKey, note);
       await queryClient.invalidateQueries({ queryKey: ['notes', 'list'] });
     },
   });
