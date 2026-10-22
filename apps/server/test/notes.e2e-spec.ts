@@ -173,6 +173,13 @@ describe('노트 (e2e)', () => {
     expect(response.body.status).toBe(400);
   });
 
+  it('정렬 키의 형식이 맞지 않으면 400', async () => {
+    const user = await newUser();
+    await user
+      .put(`/notes/${randomUUID()}`, noteInput([item('b0', '취업')]))
+      .expect(400);
+  });
+
   it('다른 사람의 노트는 보이지도, 바꿀 수도, 지울 수도 없다(404)', async () => {
     const owner = await newUser();
     const other = await newUser();
@@ -279,6 +286,56 @@ describe('태그 (e2e)', () => {
     const note = (await user.get(`/notes/${noteId}`).expect(200)).body as Note;
     expect(note.tagIds).toEqual([]);
     expect(note.items[0]!.tagIds).toEqual([health]);
+  });
+
+  it('이름은 앞뒤 공백을 잘라 저장하고, 대소문자를 무시해 겹침을 본다', async () => {
+    const user = await newUser();
+    const tag = await user
+      .put(`/tags/${randomUUID()}`, { name: '  QT ' })
+      .expect(200);
+    expect(tag.body.name).toBe('QT');
+    await user.put(`/tags/${randomUUID()}`, { name: 'qt' }).expect(409);
+  });
+
+  it('지운 태그는 같은 ID로 되살리지 않는다(409). 이름은 새 태그에 다시 쓸 수 있다', async () => {
+    const user = await newUser();
+    const id = randomUUID();
+    await user.put(`/tags/${id}`, { name: '건강' }).expect(200);
+    await user.delete(`/tags/${id}`).expect(204);
+    await user.put(`/tags/${id}`, { name: '건강' }).expect(409);
+    await user.put(`/tags/${randomUUID()}`, { name: '건강' }).expect(200);
+  });
+
+  it('지운 태그를 걸러 낸 목록을 다시 보내면 바뀐 것이 없다(버전이 그대로다)', async () => {
+    const user = await newUser();
+    const tag = randomUUID();
+    await user.put(`/tags/${tag}`, { name: '새벽기도' }).expect(200);
+    const noteId = randomUUID();
+    await user
+      .put(
+        `/notes/${noteId}`,
+        noteInput([item('a0', '취업', { tagIds: [tag] })], { tagIds: [tag] }),
+      )
+      .expect(200);
+    await user.delete(`/tags/${tag}`).expect(204);
+
+    const read = (await user.get(`/notes/${noteId}`).expect(200)).body as Note;
+    const saved = (
+      await user
+        .put(
+          `/notes/${noteId}`,
+          noteInput(
+            [item('a0', '취업', { id: read.items[0]!.id, tagIds: [] })],
+            {
+              prayedAt: read.prayedAt,
+              tagIds: [],
+            },
+          ),
+        )
+        .expect(200)
+    ).body as Note;
+    expect(saved.version).toBe(read.version);
+    expect(saved.items[0]!.version).toBe(read.items[0]!.version);
   });
 
   it('다른 사람의 태그는 바꿀 수 없다(404)', async () => {

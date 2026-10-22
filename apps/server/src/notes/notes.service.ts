@@ -12,6 +12,7 @@ import type {
   PrayerItem,
   PrayerItemInput,
 } from '@pray/api-contract';
+import { isValidSortKey } from '@pray/domain';
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module.js';
 import {
@@ -108,7 +109,8 @@ export class NotesService {
         throw new NotFoundException('노트를 찾을 수 없습니다');
       }
 
-      await this.assertKnownTags(tx, userId, input);
+      assertValidSortKeys(input);
+      const live = await this.assertKnownTags(tx, userId, input);
       const currentItems = await this.itemsForSave(tx, userId, noteId, input);
 
       if (existing === undefined) {
@@ -119,7 +121,7 @@ export class NotesService {
           memo: input.memo,
           tagIds: input.tagIds,
         });
-      } else if (noteChanged(existing, input)) {
+      } else if (noteChanged(existing, input, live)) {
         await tx
           .update(notes)
           .set({
@@ -132,7 +134,7 @@ export class NotesService {
           .where(eq(notes.id, noteId));
       }
 
-      await this.saveItems(tx, userId, noteId, input.items, currentItems);
+      await this.saveItems(tx, userId, noteId, input.items, currentItems, live);
       return this.getIn(tx, userId, noteId);
     });
   }
@@ -226,18 +228,16 @@ export class NotesService {
     }));
   }
 
+  /** 보낸 태그가 모두 살아 있는지 확인하고, 살아 있는 태그 ID를 돌려준다. */
   private async assertKnownTags(
     tx: Transaction,
     userId: string,
     input: NoteInput,
-  ): Promise<void> {
+  ): Promise<Set<string>> {
     const requested = new Set([
       ...input.tagIds,
       ...input.items.flatMap((item) => item.tagIds),
     ]);
-    if (requested.size === 0) {
-      return;
-    }
     const live = await liveTagIds(tx, userId);
     const unknown = [...requested].filter((id) => !live.has(id));
     if (unknown.length > 0) {
@@ -245,6 +245,7 @@ export class NotesService {
         `알 수 없는 태그입니다: ${unknown.join(', ')}`,
       );
     }
+    return live;
   }
 
   /** 이 노트의 기존 기도제목(삭제 표시 포함). 보낸 ID가 다른 노트의 것이면 409. */
@@ -287,6 +288,7 @@ export class NotesService {
     noteId: string,
     inputs: PrayerItemInput[],
     current: Map<string, ItemRow>,
+    live: Set<string>,
   ): Promise<void> {
     const sent = new Set(inputs.map((item) => item.id));
     for (const input of inputs) {
@@ -301,7 +303,7 @@ export class NotesService {
         await tx
           .insert(prayerItems)
           .values({ id: input.id, userId, noteId, ...values });
-      } else if (itemChanged(row, input)) {
+      } else if (itemChanged(row, input, live)) {
         await tx
           .update(prayerItems)
           .set({ ...values, deletedAt: null, ...bumped(prayerItems) })
@@ -329,22 +331,40 @@ function sameIds(a: string[], b: string[]): boolean {
   return a.length === b.length && a.every((id, index) => id === b[index]);
 }
 
-function noteChanged(row: NoteRow, input: NoteInput): boolean {
+function assertValidSortKeys(input: NoteInput): void {
+  const invalid = input.items.filter((item) => !isValidSortKey(item.sortKey));
+  if (invalid.length > 0) {
+    throw new BadRequestException(
+      `정렬 키의 형식이 맞지 않습니다: ${invalid.map((item) => item.sortKey).join(', ')}`,
+    );
+  }
+}
+
+// 태그는 지운 것을 걸러 낸 값으로 비교한다. 읽을 때 걸러 낸 목록을 그대로 다시 보내면 바뀐 것이 없다
+function noteChanged(
+  row: NoteRow,
+  input: NoteInput,
+  live: Set<string>,
+): boolean {
   return (
     row.deletedAt !== null ||
     row.prayedAt.getTime() !== new Date(input.prayedAt).getTime() ||
     row.memo !== input.memo ||
-    !sameIds(row.tagIds, input.tagIds)
+    !sameIds(onlyLive(row.tagIds, live), input.tagIds)
   );
 }
 
-function itemChanged(row: ItemRow, input: PrayerItemInput): boolean {
+function itemChanged(
+  row: ItemRow,
+  input: PrayerItemInput,
+  live: Set<string>,
+): boolean {
   return (
     row.deletedAt !== null ||
     row.sortKey !== input.sortKey ||
     row.title !== input.title ||
     row.detail !== input.detail ||
-    !sameIds(row.tagIds, input.tagIds)
+    !sameIds(onlyLive(row.tagIds, live), input.tagIds)
   );
 }
 

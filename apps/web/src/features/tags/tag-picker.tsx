@@ -1,3 +1,4 @@
+import { normalizeTagName, sameTagName } from '@pray/domain';
 import { useQuery } from '@tanstack/react-query';
 import { type KeyboardEvent, useState } from 'react';
 import { tagsQuery, useCreateTag } from './queries';
@@ -18,12 +19,12 @@ export function TagPicker({
   const byId = new Map((tags.data ?? []).map((tag) => [tag.id, tag]));
 
   async function add() {
-    const trimmed = name.trim();
+    const trimmed = normalizeTagName(name);
     if (trimmed === '') {
       return;
     }
-    const existing = (tags.data ?? []).find(
-      (tag) => tag.name.toLowerCase() === trimmed.toLowerCase(),
+    const existing = (tags.data ?? []).find((tag) =>
+      sameTagName(tag.name, trimmed),
     );
     const tag = existing ?? (await createTag.mutateAsync(trimmed));
     if (!value.includes(tag.id)) {

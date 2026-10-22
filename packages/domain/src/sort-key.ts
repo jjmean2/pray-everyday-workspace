@@ -14,3 +14,13 @@ export function sortKeyBetween(
 export function compareSortKeys(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
+
+/** fractional-indexing 4의 기본 형식에 맞는 키인가. 서버가 받은 키를 검사할 때 쓴다(형식이 틀린 키는 다음 키를 만들 수 없다). */
+export function isValidSortKey(key: string): boolean {
+  try {
+    generateKeyBetween(key, null);
+    return true;
+  } catch {
+    return false;
+  }
+}
