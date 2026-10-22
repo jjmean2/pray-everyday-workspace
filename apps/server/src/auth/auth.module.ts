@@ -2,8 +2,7 @@ import { type DynamicModule, Module } from '@nestjs/common';
 import { isDevLoginEnabled } from '../env.js';
 import { AuthController } from './auth.controller.js';
 import { DevAuthController } from './dev-auth.controller.js';
-import { SessionGuard } from './session.guard.js';
-import { SessionService } from './session.service.js';
+import { SessionModule } from './session.module.js';
 
 @Module({})
 export class AuthModule {
@@ -15,8 +14,7 @@ export class AuthModule {
       controllers: devLogin
         ? [AuthController, DevAuthController]
         : [AuthController],
-      providers: [SessionService, SessionGuard],
-      exports: [SessionService, SessionGuard],
+      imports: [SessionModule],
     };
   }
 }
