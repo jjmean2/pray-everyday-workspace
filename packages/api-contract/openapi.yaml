@@ -13,6 +13,8 @@ servers:
 tags:
   - name: health
   - name: auth
+  - name: notes
+  - name: tags
 paths:
   /health:
     get:
@@ -83,6 +85,179 @@ paths:
           $ref: '#/components/responses/BadRequest'
         default:
           $ref: '#/components/responses/Error'
+  /notes:
+    get:
+      operationId: listNotes
+      tags: [notes]
+      summary: 내 노트 목록 (기도한 시각의 역순)
+      description: 삭제 표시된 노트는 빼고, 기도제목과 태그를 함께 담는다.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: cursor
+          in: query
+          description: 앞 페이지의 nextCursor. 없으면 처음부터
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: 노트 목록
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /notes/{noteId}:
+    parameters:
+      - $ref: '#/components/parameters/NoteId'
+    get:
+      operationId: getNote
+      tags: [notes]
+      summary: 노트 하나
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: 노트
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      operationId: saveNote
+      tags: [notes]
+      summary: 노트를 기도제목과 함께 통째로 저장한다
+      description: |
+        없으면 만들고 있으면 바꾼다. ID는 클라이언트가 만들어서 같은 요청을 다시 보내도 결과가 같다.
+        items에서 빠진 기도제목은 삭제 표시하고, 삭제 표시된 노트나 기도제목을 다시 보내면 되살린다.
+        다른 사람의 노트는 404다. 기도제목 ID가 다른 노트의 것이면 409다.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteInput'
+      responses:
+        '200':
+          description: 저장한 노트
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: deleteNote
+      tags: [notes]
+      summary: 노트와 그 기도제목에 삭제 표시를 한다
+      description: 이미 삭제 표시된 노트도 204다.
+      security:
+        - sessionCookie: []
+      responses:
+        '204':
+          description: 삭제 표시했다
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/Error'
+  /tags:
+    get:
+      operationId: listTags
+      tags: [tags]
+      summary: 내 태그 목록 (이름 순)
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: 태그 목록
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/Error'
+  /tags/{tagId}:
+    parameters:
+      - $ref: '#/components/parameters/TagId'
+    put:
+      operationId: saveTag
+      tags: [tags]
+      summary: 태그를 만들거나 이름을 바꾼다
+      description: 이름은 내 태그 안에서 대소문자를 무시하고 겹치지 않는다. 겹치면 409다.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagInput'
+      responses:
+        '200':
+          description: 저장한 태그
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: deleteTag
+      tags: [tags]
+      summary: 태그에 삭제 표시를 한다
+      description: 노트와 기도제목에 붙어 있던 이 태그는 읽을 때 빠진다. 이미 삭제 표시된 태그도 204다.
+      security:
+        - sessionCookie: []
+      responses:
+        '204':
+          description: 삭제 표시했다
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        default:
+          $ref: '#/components/responses/Error'
 components:
   securitySchemes:
     sessionCookie:
@@ -90,7 +265,34 @@ components:
       in: cookie
       name: session
       description: 로그인할 때 서버가 주는 세션 쿠키(HttpOnly)
+  parameters:
+    NoteId:
+      name: noteId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TagId:
+      name: tagId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   responses:
+    NotFound:
+      description: 없거나 내 것이 아니다
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: 다른 레코드와 충돌한다
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
     Error:
       description: 이 엔드포인트에 따로 적지 않은 모든 오류. 형식은 항상 Problem Details다
       content:
@@ -141,6 +343,162 @@ components:
           type: string
           minLength: 1
           maxLength: 50
+    TagIds:
+      description: 붙인 태그의 ID. 삭제 표시된 태그는 응답에서 빠진다
+      type: array
+      maxItems: 50
+      uniqueItems: true
+      items:
+        type: string
+        format: uuid
+    SortKey:
+      description: 노트 안의 순서를 정하는 분수 인덱스. 문자열 순서대로 정렬한다
+      type: string
+      minLength: 1
+      maxLength: 100
+      pattern: '^[0-9A-Za-z]+$'
+    PrayerItemInput:
+      type: object
+      required: [id, sortKey, title, detail, tagIds]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        sortKey:
+          $ref: '#/components/schemas/SortKey'
+        title:
+          type: [string, 'null']
+          maxLength: 200
+        detail:
+          type: [string, 'null']
+          maxLength: 10000
+        tagIds:
+          $ref: '#/components/schemas/TagIds'
+      description: 기도제목 하나. 제목과 상세 중 하나 이상은 공백이 아닌 글자를 가진다
+      allOf:
+        - anyOf:
+            - properties:
+                title:
+                  type: string
+                  pattern: '\S'
+            - properties:
+                detail:
+                  type: string
+                  pattern: '\S'
+    NoteInput:
+      type: object
+      required: [prayedAt, memo, tagIds, items]
+      additionalProperties: false
+      properties:
+        prayedAt:
+          type: string
+          format: date-time
+        memo:
+          type: [string, 'null']
+          maxLength: 10000
+        tagIds:
+          $ref: '#/components/schemas/TagIds'
+        items:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/PrayerItemInput'
+    PrayerItem:
+      type: object
+      required:
+        [id, sortKey, title, detail, tagIds, threadId, version, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sortKey:
+          $ref: '#/components/schemas/SortKey'
+        title:
+          type: [string, 'null']
+        detail:
+          type: [string, 'null']
+        tagIds:
+          $ref: '#/components/schemas/TagIds'
+        threadId:
+          type: [string, 'null']
+          format: uuid
+        version:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+    Note:
+      type: object
+      required:
+        [id, prayedAt, memo, tagIds, items, version, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        prayedAt:
+          type: string
+          format: date-time
+        memo:
+          type: [string, 'null']
+        tagIds:
+          $ref: '#/components/schemas/TagIds'
+        items:
+          description: 정렬 키 순서
+          type: array
+          items:
+            $ref: '#/components/schemas/PrayerItem'
+        version:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    NoteList:
+      type: object
+      required: [notes, nextCursor]
+      properties:
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+        nextCursor:
+          description: 다음 페이지가 없으면 null
+          type: [string, 'null']
+    TagInput:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 30
+          pattern: '\S'
+    Tag:
+      type: object
+      required: [id, name, version, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        version:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+    TagList:
+      type: object
+      required: [tags]
+      properties:
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
     Problem:
       description: RFC 9457 Problem Details
       type: object
