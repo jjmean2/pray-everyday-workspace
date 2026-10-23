@@ -302,22 +302,25 @@ components:
           제공자가 브라우저를 보내는 주소다. 성공하면 세션 쿠키를 주고 returnTo로, 실패하면 웹의
           `/?loginError=<코드>`로 보낸다(이 목록이 코드의 원본이다). 명세 위반과 서버 오류는 다른 API처럼 Problem Details다. 코드: `cancelled`(사용자가 취소), `invalid_state`(state가 없거나 다름,
           시간 초과 포함), `provider_error`(제공자와의 통신 실패), `not_configured`(설정 없음).
-          제공자가 붙이는 다른 쿼리 파라미터(scope 등)는 무시한다.
+          제공자가 붙이는 다른 쿼리 파라미터(scope 등)는 무시한다. 제공자는 값의 `/`, `:` 등을 인코딩하지 않고 보낼 수 있다(구글의 code는 `4/…`).
         x-eov-allow-unknown-query-parameters: true
         parameters:
           - name: code
             in: query
             required: false
+            allowReserved: true
             schema:
               type: string
           - name: state
             in: query
             required: false
+            allowReserved: true
             schema:
               type: string
           - name: error
             in: query
             required: false
+            allowReserved: true
             schema:
               type: string
         responses:

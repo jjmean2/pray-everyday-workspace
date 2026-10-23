@@ -54,3 +54,5 @@ Thumbs.db
 
 # Claude Code 개인 설정 (프로젝트 공용 설정과 에이전트 정의는 커밋한다)
 .claude/settings.local.json
+
+/.credentials

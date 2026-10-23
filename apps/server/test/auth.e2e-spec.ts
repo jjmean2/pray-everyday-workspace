@@ -386,6 +386,22 @@ describe('소셜 로그인 (e2e, 가짜 제공자)', () => {
     expect(done.headers.location).toBe('/');
   });
 
+  it('제공자가 인코딩하지 않은 /와 :가 든 값(구글의 code, scope)도 받는다', async () => {
+    profiles.set('4/0AbCd-raw', {
+      providerUserId: `google-${randomUUID()}`,
+      displayName: '은혜',
+      profileImageUrl: null,
+    });
+    const { state, cookies } = await start();
+    const done = await request(app.getHttpServer())
+      .get(
+        `/auth/kakao/callback?state=${state}&code=4/0AbCd-raw&scope=profile+openid+https://www.googleapis.com/auth/userinfo.profile&authuser=0&prompt=consent`,
+      )
+      .set('Cookie', cookies)
+      .expect(302);
+    expect(done.headers.location).toBe('/');
+  });
+
   it('실패하면 세션 없이 /?loginError=<코드>로 보낸다', async () => {
     const cases: [Record<string, string>, boolean, string][] = [
       // [쿼리, 시작할 때의 쿠키를 보내는가, 오류 코드]
