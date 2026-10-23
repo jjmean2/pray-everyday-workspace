@@ -249,9 +249,9 @@ describe('노트 (e2e)', () => {
       user.put(`/notes/${randomUUID()}`, noteInput([shared])),
       user.put(`/notes/${randomUUID()}`, noteInput([shared])),
     ]);
-    expect(responses.map((response) => response.status).sort()).toEqual([
-      200, 409,
-    ]);
+    expect(
+      responses.map((response) => response.status).sort((a, b) => a - b),
+    ).toEqual([200, 409]);
   });
 
   it('저장과 삭제가 동시에 와도 노트와 기도제목의 상태가 어긋나지 않는다', async () => {
