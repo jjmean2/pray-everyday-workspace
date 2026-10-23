@@ -1,0 +1,43 @@
+# 커밋 전 검사(pre-commit의 design-harness check)와 별도로, 푸시와 PR마다 빌드와 테스트를 돌린다.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: pray
+          POSTGRES_PASSWORD: pray
+          POSTGRES_DB: pray_everyday
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pray -d pray_everyday"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://pray:pray@localhost:5432/pray_everyday
+    steps:
+      - uses: actions/checkout@v5
+      # pnpm 버전은 package.json의 packageManager를 따른다
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm build
+      - run: pnpm lint
+      - run: pnpm check-types
+      - run: pnpm test
+      - run: pnpm --filter @pray/server db:migrate
+      - run: pnpm --filter @pray/server test:e2e

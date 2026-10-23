@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm turbo run build --filter=@pray/server && pnpm --filter @pray/server db:migrate",
+  "ignoreCommand": "[ \"$VERCEL_ENV\" != \"production\" ]",
+  "outputDirectory": "public",
+  "regions": ["sin1"],
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "node_modules/@pray/api-contract/openapi.yaml"
+    }
+  },
+  "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
+}

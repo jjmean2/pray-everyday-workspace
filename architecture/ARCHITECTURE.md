@@ -34,8 +34,8 @@ flowchart LR
 
 | 경로 | 역할 |
 |---|---|
-| `apps/web/` | 웹. TanStack Start(SPA 모드) + TanStack Query, Tailwind CSS. 서버는 `openapi-fetch`로 부르고, 개발 중에는 `/api`를 서버로 프록시한다. 기능별 코드는 `src/features/`(노트 에디터의 편집 동작은 화면과 분리한 `features/notes/editor-model.ts`) |
-| `apps/server/` | 서버. NestJS 12 + Drizzle 0.45 + PostgreSQL. 테이블 정의는 `src/database/schema.ts`, 마이그레이션은 `drizzle/`, 인증은 `src/auth/`(세션 확인은 `SessionModule`), 개인 기록은 `src/notes/`와 `src/tags/`(삭제 표시된 태그를 거르는 공용 코드는 `src/personal/`), DB 오류 판정은 `src/database/errors.ts`. 앱 설정(쿠키, 명세 검사, 오류 형식)은 `src/app.setup.ts`에 모아 서버와 e2e가 함께 쓴다 |
+| `apps/web/` | 웹. TanStack Start(SPA 모드) + TanStack Query, Tailwind CSS. 서버는 `openapi-fetch`로 부르고, 개발 중에는 `/api`를 서버로 프록시한다. 기능별 코드는 `src/features/`(노트 에디터의 편집 동작은 화면과 분리한 `features/notes/editor-model.ts`). 미리보기 배포 설정은 `vercel.json`(정적 파일, `/api` rewrite, SPA 셸) |
+| `apps/server/` | 서버. NestJS 12 + Drizzle 0.45 + PostgreSQL. 테이블 정의는 `src/database/schema.ts`, 마이그레이션은 `drizzle/`, 인증은 `src/auth/`(세션 확인은 `SessionModule`), 개인 기록은 `src/notes/`와 `src/tags/`(삭제 표시된 태그를 거르는 공용 코드는 `src/personal/`), DB 오류 판정은 `src/database/errors.ts`. 앱 설정(쿠키, 명세 검사, 오류 형식)은 `src/app.setup.ts`에 모아 서버와 e2e가 함께 쓴다. 진입점은 로컬과 상시 실행 서버가 `src/main.ts`, Vercel 함수가 `src/serverless.ts`(`api/index.js`가 빌드 결과를 내보낸다)이고, 미리보기 배포 설정은 `vercel.json` |
 | `packages/api-contract/` | API 계약. `openapi.yaml`이 원본이고, 빌드할 때 TypeScript 타입을 생성한다 |
 | `packages/domain/` | 웹과 서버가 함께 쓰는 도메인 규칙 |
 | `architecture/` | 요구사항, 아키텍처, 컨벤션 문서와 결정 기록 |
