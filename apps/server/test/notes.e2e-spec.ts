@@ -207,6 +207,22 @@ describe('노트 (e2e)', () => {
     expect(response.body.status).toBe(400);
   });
 
+  it('ID는 소문자만 받는다(대문자면 400)', async () => {
+    const user = await newUser();
+    await user
+      .put(
+        `/notes/${randomUUID().toUpperCase()}`,
+        noteInput([item('a0', '취업')]),
+      )
+      .expect(400);
+    await user
+      .put(
+        `/notes/${randomUUID()}`,
+        noteInput([item('a0', '취업', { id: randomUUID().toUpperCase() })]),
+      )
+      .expect(400);
+  });
+
   it('정렬 키의 형식이 맞지 않으면 400', async () => {
     const user = await newUser();
     await user

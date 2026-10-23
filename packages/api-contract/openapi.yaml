@@ -275,6 +275,8 @@ components:
       schema:
         type: string
         format: uuid
+        # ID는 소문자로만 쓴다(서버와 클라이언트가 문자열로 비교한다)
+        pattern: '^[0-9a-f-]+$'
     TagId:
       name: tagId
       in: path
@@ -282,6 +284,8 @@ components:
       schema:
         type: string
         format: uuid
+        # ID는 소문자로만 쓴다(서버와 클라이언트가 문자열로 비교한다)
+        pattern: '^[0-9a-f-]+$'
   responses:
     NotFound:
       description: 없거나 내 것이 아니다
@@ -331,6 +335,8 @@ components:
         id:
           type: string
           format: uuid
+          # ID는 소문자로만 쓴다(서버와 클라이언트가 문자열로 비교한다)
+          pattern: '^[0-9a-f-]+$'
         displayName:
           type: string
         profileImageUrl:
@@ -353,6 +359,8 @@ components:
       items:
         type: string
         format: uuid
+        # ID는 소문자로만 쓴다(서버와 클라이언트가 문자열로 비교한다)
+        pattern: '^[0-9a-f-]+$'
     SortKey:
       description: 노트 안의 순서를 정하는 분수 인덱스. fractional-indexing 4의 기본 형식이어야 하고(아니면 400), 바이트 순서로 정렬한다
       type: string
@@ -367,6 +375,8 @@ components:
         id:
           type: string
           format: uuid
+          # ID는 소문자로만 쓴다(서버와 클라이언트가 문자열로 비교한다)
+          pattern: '^[0-9a-f-]+$'
         sortKey:
           $ref: '#/components/schemas/SortKey'
         title:
@@ -414,6 +424,8 @@ components:
         id:
           type: string
           format: uuid
+          # ID는 소문자로만 쓴다(서버와 클라이언트가 문자열로 비교한다)
+          pattern: '^[0-9a-f-]+$'
         sortKey:
           $ref: '#/components/schemas/SortKey'
         title:
@@ -425,6 +437,8 @@ components:
         threadId:
           type: [string, 'null']
           format: uuid
+          # ID는 소문자로만 쓴다(서버와 클라이언트가 문자열로 비교한다)
+          pattern: '^[0-9a-f-]+$'
         version:
           type: integer
         updatedAt:
@@ -438,6 +452,8 @@ components:
         id:
           type: string
           format: uuid
+          # ID는 소문자로만 쓴다(서버와 클라이언트가 문자열로 비교한다)
+          pattern: '^[0-9a-f-]+$'
         prayedAt:
           type: string
           format: date-time
@@ -486,6 +502,8 @@ components:
         id:
           type: string
           format: uuid
+          # ID는 소문자로만 쓴다(서버와 클라이언트가 문자열로 비교한다)
+          pattern: '^[0-9a-f-]+$'
         name:
           type: string
         version:
