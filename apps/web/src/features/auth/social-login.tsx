@@ -1,4 +1,6 @@
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
+import { API_BASE } from '../../lib/api';
 
 const PROVIDERS = [
   {
@@ -13,7 +15,7 @@ const PROVIDERS = [
   },
 ] as const;
 
-// 서버가 로그인에 실패하면 /?loginError=<코드>로 보낸다(명세의 소셜 로그인 콜백)
+// 서버가 로그인에 실패하면 /?loginError=<코드>로 보낸다. 코드 목록의 원본은 명세의 SocialCallback 설명이다
 const ERROR_MESSAGES: Record<string, string> = {
   cancelled: '로그인을 취소했습니다.',
   invalid_state:
@@ -25,8 +27,13 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 /** 소셜 로그인 버튼. 서버의 로그인 시작 주소로 이동하고, 로그인한 뒤 지금 화면으로 돌아온다. */
 export function SocialLogin() {
+  const location = useLocation();
   const error = useLoginError();
-  const returnTo = window.location.pathname + window.location.search;
+  // 돌아올 주소에는 오류 안내를 싣지 않는다
+  const search = new URLSearchParams(location.searchStr);
+  search.delete('loginError');
+  const query = search.toString();
+  const returnTo = location.pathname + (query === '' ? '' : `?${query}`);
 
   return (
     <div className="mt-4 flex flex-col gap-2">
@@ -38,7 +45,7 @@ export function SocialLogin() {
       {PROVIDERS.map((provider) => (
         <a
           key={provider.id}
-          href={`/api/auth/${provider.id}/login?returnTo=${encodeURIComponent(returnTo)}`}
+          href={`${API_BASE}/auth/${provider.id}/login?returnTo=${encodeURIComponent(returnTo)}`}
           className={`rounded-lg px-4 py-3 text-center text-sm font-medium ${provider.className}`}
         >
           {provider.label}
@@ -50,16 +57,24 @@ export function SocialLogin() {
 
 /** 주소의 loginError를 한 번 읽고 주소에서는 지운다(새로 고침해도 다시 보이지 않게). */
 function useLoginError(): string | null {
-  const [error] = useState(() =>
-    new URLSearchParams(window.location.search).get('loginError'),
-  );
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [error] = useState(() => {
+    const value = (location.search as Record<string, unknown>).loginError;
+    return typeof value === 'string' ? value : null;
+  });
   useEffect(() => {
     if (error === null) {
       return;
     }
-    const url = new URL(window.location.href);
-    url.searchParams.delete('loginError');
-    window.history.replaceState(window.history.state, '', url);
-  }, [error]);
+    void navigate({
+      to: '.',
+      search: (prev: Record<string, unknown>) => ({
+        ...prev,
+        loginError: undefined,
+      }),
+      replace: true,
+    });
+  }, [error, navigate]);
   return error;
 }

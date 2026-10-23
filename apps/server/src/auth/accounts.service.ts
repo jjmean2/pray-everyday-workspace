@@ -4,11 +4,9 @@ import { DATABASE, type Database } from '../database/database.module.js';
 import { type AuthProvider, authAccounts, users } from '../database/schema.js';
 import type { UserRecord } from './session.service.js';
 
-export const DEFAULT_DISPLAY_NAME = '기도하는 사람';
-const DISPLAY_NAME_MAX = 50;
-
+/** 새 사용자의 이름과 사진. 로그인 수단마다 정한 규칙으로 만든 값을 그대로 저장한다. */
 export interface NewUserProfile {
-  displayName: string | null;
+  displayName: string;
   profileImageUrl: string | null;
 }
 
@@ -32,7 +30,7 @@ export class AccountsService {
         const [user] = await tx
           .insert(users)
           .values({
-            displayName: toDisplayName(profile.displayName),
+            displayName: profile.displayName,
             profileImageUrl: profile.profileImageUrl,
           })
           .returning();
@@ -68,13 +66,4 @@ export class AccountsService {
       .limit(1);
     return row?.user;
   }
-}
-
-/** 제공자가 이름을 주지 않았거나 비어 있으면 기본 이름을 쓴다. 길면 자른다. */
-function toDisplayName(name: string | null): string {
-  if (name === null || name.trim() === '') {
-    return DEFAULT_DISPLAY_NAME;
-  }
-  // 명세처럼 코드 포인트로 센다(이모지가 반으로 잘리지 않게)
-  return Array.from(name).slice(0, DISPLAY_NAME_MAX).join('');
 }

@@ -283,7 +283,7 @@ components:
           - name: returnTo
             in: query
             required: false
-            description: 로그인한 뒤 돌아갈 앱 안의 경로. `/`로 시작해야 하고, 아니면 `/`로 돌아간다
+            description: 로그인한 뒤 돌아갈 앱 안의 경로. `/`로 시작하고 `//`로 시작하지 않으며 `\`나 제어 문자가 없어야 하고, 아니면 `/`로 돌아간다
             # 경로라서 `/`를 인코딩하지 않은 값도 받는다
             allowReserved: true
             schema:
@@ -300,7 +300,7 @@ components:
         summary: 제공자에서 돌아온다(로그인을 마치고 세션 쿠키를 준다)
         description: |
           제공자가 브라우저를 보내는 주소다. 성공하면 세션 쿠키를 주고 returnTo로, 실패하면 웹의
-          `/?loginError=<코드>`로 보낸다. 코드: `cancelled`(사용자가 취소), `invalid_state`(state가 없거나 다름,
+          `/?loginError=<코드>`로 보낸다(이 목록이 코드의 원본이다). 명세 위반과 서버 오류는 다른 API처럼 Problem Details다. 코드: `cancelled`(사용자가 취소), `invalid_state`(state가 없거나 다름,
           시간 초과 포함), `provider_error`(제공자와의 통신 실패), `not_configured`(설정 없음).
           제공자가 붙이는 다른 쿼리 파라미터(scope 등)는 무시한다.
         x-eov-allow-unknown-query-parameters: true

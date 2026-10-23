@@ -31,7 +31,7 @@ export class DevAuthController {
     @Body() { displayName }: DevLoginRequest,
     @Res({ passthrough: true }) response: Response,
   ): Promise<CurrentUser> {
-    // 표시 이름이 곧 로그인 수단의 ID다
+    // 표시 이름이 곧 로그인 수단의 ID이고, 명세를 통과한 값을 그대로 쓴다
     const user = await this.accounts.findOrCreateUser('dev', displayName, {
       displayName,
       profileImageUrl: null,

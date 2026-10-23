@@ -24,6 +24,7 @@ import {
   type OAuthProviders,
   type SocialProvider,
 } from './oauth-provider.js';
+import { socialDisplayName } from './profile-name.js';
 import { safeReturnTo } from './return-to.js';
 
 type LoginError =
@@ -105,7 +106,10 @@ export class OAuthController {
     const user = await this.accounts.findOrCreateUser(
       provider,
       profile.providerUserId,
-      profile,
+      {
+        displayName: socialDisplayName(profile.displayName),
+        profileImageUrl: profile.profileImageUrl,
+      },
     );
     const { token, expiresAt } = await this.sessions.create(user.id);
     setSessionCookie(response, token, expiresAt);
@@ -113,7 +117,7 @@ export class OAuthController {
   }
 }
 
-/** 웹의 첫 화면으로 보내고, 웹이 loginError를 보고 알린다. */
+/** 웹의 첫 화면으로 보내고, 웹이 loginError를 보고 알린다. 코드 목록의 원본은 명세의 SocialCallback 설명이다. */
 function redirectWithError(response: Response, error: LoginError): void {
   response.redirect(302, `/?loginError=${error}`);
 }

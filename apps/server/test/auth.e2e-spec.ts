@@ -203,6 +203,11 @@ describe('인증 (e2e)', () => {
       const emoji50 = `${'🙏'.repeat(42)}${randomUUID().slice(0, 8)}`;
       const second = await login(emoji50);
       expect(second.response.body.displayName).toBe(emoji50);
+
+      // 소셜 로그인의 기본 이름 규칙은 개발용 로그인에 쓰지 않는다
+      const blank = ' '.repeat(3);
+      const third = await login(blank);
+      expect(third.response.body.displayName).toBe(blank);
     });
   });
 });
