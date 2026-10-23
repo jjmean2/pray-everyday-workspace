@@ -12,8 +12,9 @@ import type {
   PrayerItem,
   PrayerItemInput,
 } from '@pray/api-contract';
-import { isValidSortKey } from '@pray/domain';
-import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { compareSortKeys, isValidSortKey } from '@pray/domain';
+import { and, desc, eq, inArray, isNull, or, type SQL, sql } from 'drizzle-orm';
+import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { DATABASE, type Database } from '../database/database.module.js';
 import {
   nextPersonalChangeSeq,
@@ -79,7 +80,10 @@ export class NotesService {
     return this.getIn(this.db, userId, noteId);
   }
 
-  /** 노트를 기도제목과 함께 통째로 저장한다(ADR-0007). 빠진 기도제목은 삭제 표시한다. */
+  /**
+   * 노트를 기도제목과 함께 통째로 저장한다(ADR-0007). 빠진 기도제목은 삭제 표시한다.
+   * 노트 행을 잠가 같은 노트의 저장과 삭제를 차례대로 처리하고, 기도제목은 바뀐 것만 한 번에 쓴다.
+   */
   async save(userId: string, noteId: string, input: NoteInput): Promise<Note> {
     try {
       return await this.saveInTransaction(userId, noteId, input);
@@ -99,30 +103,20 @@ export class NotesService {
     noteId: string,
     input: NoteInput,
   ): Promise<Note> {
+    assertValidSortKeys(input);
+    const ids = input.items.map((item) => item.id);
+    if (new Set(ids).size !== ids.length) {
+      throw new BadRequestException('같은 기도제목 ID가 두 번 있습니다');
+    }
+
     return this.db.transaction(async (tx) => {
-      const [existing] = await tx
-        .select()
-        .from(notes)
-        .where(eq(notes.id, noteId))
-        .limit(1);
-      if (existing !== undefined && existing.userId !== userId) {
-        throw new NotFoundException('노트를 찾을 수 없습니다');
-      }
-
-      assertValidSortKeys(input);
+      const locked = await this.lockOrCreateNote(tx, userId, noteId, input);
+      const currentItems = await this.itemsForSave(tx, noteId, ids);
       const live = await this.assertKnownTags(tx, userId, input);
-      const currentItems = await this.itemsForSave(tx, userId, noteId, input);
 
-      if (existing === undefined) {
-        await tx.insert(notes).values({
-          id: noteId,
-          userId,
-          prayedAt: new Date(input.prayedAt),
-          memo: input.memo,
-          tagIds: input.tagIds,
-        });
-      } else if (noteChanged(existing, input, live)) {
-        await tx
+      let note = locked.row;
+      if (!locked.created && noteChanged(note, input, live)) {
+        const [updated] = await tx
           .update(notes)
           .set({
             prayedAt: new Date(input.prayedAt),
@@ -131,23 +125,67 @@ export class NotesService {
             deletedAt: null,
             ...bumped(notes),
           })
-          .where(eq(notes.id, noteId));
+          .where(eq(notes.id, noteId))
+          .returning();
+        note = updated!;
       }
 
-      await this.saveItems(tx, userId, noteId, input.items, currentItems, live);
-      return this.getIn(tx, userId, noteId);
+      const written = await this.saveItems(
+        tx,
+        userId,
+        noteId,
+        input.items,
+        currentItems,
+        live,
+      );
+
+      // 다시 읽지 않고 응답을 만든다: 보낸 기도제목 중 안 바뀐 것은 읽어 둔 행, 바뀐 것은 쓴 결과
+      const items = input.items
+        .map((item) => written.get(item.id) ?? currentItems.get(item.id)!)
+        .sort(compareItemRows);
+      return toNote(note, items, live);
     });
+  }
+
+  /**
+   * 노트 행을 잠근다. 없으면 보낸 내용으로 만든다. 다른 사람의 노트는 404.
+   * 같은 새 노트를 동시에 저장하면 나중 것은 먼저 것이 커밋할 때까지 기다렸다가 기존 노트로 이어서 처리한다.
+   */
+  private async lockOrCreateNote(
+    tx: Transaction,
+    userId: string,
+    noteId: string,
+    input: NoteInput,
+  ): Promise<{ row: NoteRow; created: boolean }> {
+    let row = await lockNote(tx, noteId);
+    if (row === undefined) {
+      const [created] = await tx
+        .insert(notes)
+        .values({
+          id: noteId,
+          userId,
+          prayedAt: new Date(input.prayedAt),
+          memo: input.memo,
+          tagIds: input.tagIds,
+        })
+        .onConflictDoNothing({ target: notes.id })
+        .returning();
+      if (created !== undefined) {
+        return { row: created, created: true };
+      }
+      row = await lockNote(tx, noteId);
+    }
+    if (row === undefined || row.userId !== userId) {
+      throw new NotFoundException('노트를 찾을 수 없습니다');
+    }
+    return { row, created: false };
   }
 
   /** 노트와 그 기도제목에 삭제 표시를 한다. 이미 삭제 표시됐으면 그대로 둔다. */
   async delete(userId: string, noteId: string): Promise<void> {
     await this.db.transaction(async (tx) => {
-      const [note] = await tx
-        .select()
-        .from(notes)
-        .where(and(eq(notes.id, noteId), eq(notes.userId, userId)))
-        .limit(1);
-      if (note === undefined) {
+      const note = await lockNote(tx, noteId);
+      if (note === undefined || note.userId !== userId) {
         throw new NotFoundException('노트를 찾을 수 없습니다');
       }
       if (note.deletedAt !== null) {
@@ -214,21 +252,15 @@ export class NotesService {
         .orderBy(sortKeyOrder, prayerItems.id),
       liveTagIds(db, userId),
     ]);
-    return rows.map((row) => ({
-      id: row.id,
-      prayedAt: row.prayedAt.toISOString(),
-      memo: row.memo,
-      tagIds: onlyLive(row.tagIds, live),
-      items: items
-        .filter((item) => item.noteId === row.id)
-        .map((item) => toPrayerItem(item, live)),
-      version: row.version,
-      createdAt: row.createdAt.toISOString(),
-      updatedAt: row.updatedAt.toISOString(),
-    }));
+    return rows.map((row) =>
+      toNote(
+        row,
+        items.filter((item) => item.noteId === row.id),
+        live,
+      ),
+    );
   }
 
-  /** 보낸 태그가 모두 살아 있는지 확인하고, 살아 있는 태그 ID를 돌려준다. */
   private async assertKnownTags(
     tx: Transaction,
     userId: string,
@@ -251,37 +283,26 @@ export class NotesService {
   /** 이 노트의 기존 기도제목(삭제 표시 포함). 보낸 ID가 다른 노트의 것이면 409. */
   private async itemsForSave(
     tx: Transaction,
-    userId: string,
     noteId: string,
-    input: NoteInput,
+    ids: string[],
   ): Promise<Map<string, ItemRow>> {
-    const ids = input.items.map((item) => item.id);
-    if (new Set(ids).size !== ids.length) {
-      throw new BadRequestException('같은 기도제목 ID가 두 번 있습니다');
-    }
-    if (ids.length > 0) {
-      const elsewhere = await tx
-        .select({ id: prayerItems.id })
-        .from(prayerItems)
-        .where(
-          and(
-            inArray(prayerItems.id, ids),
-            sql`(${prayerItems.noteId} <> ${noteId} or ${prayerItems.userId} <> ${userId})`,
-          ),
-        );
-      if (elsewhere.length > 0) {
-        throw new ConflictException(
-          `다른 노트의 기도제목 ID입니다: ${elsewhere.map((row) => row.id).join(', ')}`,
-        );
-      }
-    }
     const rows = await tx
       .select()
       .from(prayerItems)
-      .where(eq(prayerItems.noteId, noteId));
+      .where(
+        or(
+          eq(prayerItems.noteId, noteId),
+          ids.length > 0 ? inArray(prayerItems.id, ids) : undefined,
+        ),
+      );
+    const elsewhere = rows.filter((row) => row.noteId !== noteId);
+    if (elsewhere.length > 0) {
+      throw otherNoteItem(elsewhere.map((row) => row.id));
+    }
     return new Map(rows.map((row) => [row.id, row]));
   }
 
+  /** 바뀌거나 새로 생긴 기도제목을 한 번에 쓰고, 빠진 것은 삭제 표시한다. 쓴 행을 돌려준다. */
   private async saveItems(
     tx: Transaction,
     userId: string,
@@ -289,27 +310,50 @@ export class NotesService {
     inputs: PrayerItemInput[],
     current: Map<string, ItemRow>,
     live: Set<string>,
-  ): Promise<void> {
-    const sent = new Set(inputs.map((item) => item.id));
-    for (const input of inputs) {
+  ): Promise<Map<string, ItemRow>> {
+    const changed = inputs.filter((input) => {
       const row = current.get(input.id);
-      const values = {
-        sortKey: input.sortKey,
-        title: input.title,
-        detail: input.detail,
-        tagIds: input.tagIds,
-      };
-      if (row === undefined) {
-        await tx
-          .insert(prayerItems)
-          .values({ id: input.id, userId, noteId, ...values });
-      } else if (itemChanged(row, input, live)) {
-        await tx
-          .update(prayerItems)
-          .set({ ...values, deletedAt: null, ...bumped(prayerItems) })
-          .where(eq(prayerItems.id, input.id));
+      return row === undefined || itemChanged(row, input, live);
+    });
+    const written = new Map<string, ItemRow>();
+    if (changed.length > 0) {
+      const rows = await tx
+        .insert(prayerItems)
+        .values(
+          changed.map((input) => ({
+            id: input.id,
+            userId,
+            noteId,
+            sortKey: input.sortKey,
+            title: input.title,
+            detail: input.detail,
+            tagIds: input.tagIds,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: prayerItems.id,
+          set: {
+            sortKey: excluded(prayerItems.sortKey),
+            title: excluded(prayerItems.title),
+            detail: excluded(prayerItems.detail),
+            tagIds: excluded(prayerItems.tagIds),
+            deletedAt: null,
+            ...bumped(prayerItems),
+          },
+          // 읽은 뒤에 다른 노트가 같은 ID를 먼저 쓴 경우, 그 행은 고치지 않는다(아래에서 409)
+          setWhere: sql`${prayerItems.noteId} = excluded.note_id`,
+        })
+        .returning();
+      for (const row of rows) {
+        written.set(row.id, row);
+      }
+      const taken = changed.filter((input) => !written.has(input.id));
+      if (taken.length > 0) {
+        throw otherNoteItem(taken.map((input) => input.id));
       }
     }
+
+    const sent = new Set(inputs.map((item) => item.id));
     const removed = [...current.values()].filter(
       (row) => !sent.has(row.id) && row.deletedAt === null,
     );
@@ -324,7 +368,51 @@ export class NotesService {
           ),
         );
     }
+    return written;
   }
+}
+
+/** 노트 행을 읽으면서 잠근다(트랜잭션이 끝날 때까지). */
+async function lockNote(
+  tx: Transaction,
+  noteId: string,
+): Promise<NoteRow | undefined> {
+  const [row] = await tx
+    .select()
+    .from(notes)
+    .where(eq(notes.id, noteId))
+    .limit(1)
+    .for('update');
+  return row;
+}
+
+/** upsert에서 충돌한 행 대신 넣으려던 값 */
+function excluded(column: AnyPgColumn): SQL {
+  return sql.raw(`excluded.${column.name}`);
+}
+
+function otherNoteItem(ids: string[]): ConflictException {
+  return new ConflictException(
+    `다른 노트의 기도제목 ID입니다: ${ids.join(', ')}`,
+  );
+}
+
+/** DB의 정렬(sortKeyOrder, id)과 같은 순서 */
+function compareItemRows(a: ItemRow, b: ItemRow): number {
+  return compareSortKeys(a.sortKey, b.sortKey) || compareSortKeys(a.id, b.id);
+}
+
+function toNote(row: NoteRow, items: ItemRow[], live: Set<string>): Note {
+  return {
+    id: row.id,
+    prayedAt: row.prayedAt.toISOString(),
+    memo: row.memo,
+    tagIds: onlyLive(row.tagIds, live),
+    items: items.map((item) => toPrayerItem(item, live)),
+    version: row.version,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
 }
 
 function sameIds(a: string[], b: string[]): boolean {

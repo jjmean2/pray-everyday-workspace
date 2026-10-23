@@ -224,6 +224,58 @@ describe('노트 (e2e)', () => {
     expect(revived.body.version).toBe(3);
   });
 
+  it('같은 새 노트를 동시에 저장해도 둘 다 성공하고 기도제목이 겹치지 않는다', async () => {
+    const user = await newUser();
+    const noteId = randomUUID();
+    const first = item('a0', '어머니 건강');
+    const second = item('a1', '취업');
+    const responses = await Promise.all([
+      user.put(`/notes/${noteId}`, noteInput([first])),
+      user.put(`/notes/${noteId}`, noteInput([first, second])),
+    ]);
+    expect(responses.map((response) => response.status)).toEqual([200, 200]);
+
+    const note = (await user.get(`/notes/${noteId}`).expect(200)).body as Note;
+    // 나중에 커밋한 저장의 내용이 남는다(어느 쪽이 나중인지는 정해지지 않는다)
+    expect([[first.id], [first.id, second.id]]).toContainEqual(
+      note.items.map((saved) => saved.id),
+    );
+  });
+
+  it('두 노트가 같은 새 기도제목 ID를 동시에 쓰면 하나는 409', async () => {
+    const user = await newUser();
+    const shared = item('a0', '어머니 건강');
+    const responses = await Promise.all([
+      user.put(`/notes/${randomUUID()}`, noteInput([shared])),
+      user.put(`/notes/${randomUUID()}`, noteInput([shared])),
+    ]);
+    expect(responses.map((response) => response.status).sort()).toEqual([
+      200, 409,
+    ]);
+  });
+
+  it('저장과 삭제가 동시에 와도 노트와 기도제목의 상태가 어긋나지 않는다', async () => {
+    const user = await newUser();
+    const noteId = randomUUID();
+    const first = item('a0', '어머니 건강');
+    await user.put(`/notes/${noteId}`, noteInput([first])).expect(200);
+
+    await Promise.all([
+      user.put(`/notes/${noteId}`, noteInput([first, item('a1', '취업')])),
+      user.delete(`/notes/${noteId}`),
+    ]);
+
+    const [note] = await db.select().from(notes).where(eq(notes.id, noteId));
+    const items = await db
+      .select()
+      .from(prayerItems)
+      .where(eq(prayerItems.noteId, noteId));
+    const noteDeleted = note!.deletedAt !== null;
+    expect(items.every((row) => (row.deletedAt !== null) === noteDeleted)).toBe(
+      true,
+    );
+  });
+
   it('목록은 기도한 시각의 역순이고 커서로 나눠 받는다', async () => {
     const user = await newUser();
     const at = (day: number) =>
