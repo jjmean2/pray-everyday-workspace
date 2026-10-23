@@ -26,8 +26,28 @@ describe('assertSafeEnv', () => {
     expect(() => assertSafeEnv()).toThrow(/DEV_LOGIN/);
   });
 
+  const socialLogin = {
+    OAUTH_REDIRECT_BASE: 'https://pray.example/api',
+    KAKAO_CLIENT_ID: 'kakao-id',
+    KAKAO_CLIENT_SECRET: 'kakao-secret',
+    GOOGLE_CLIENT_ID: 'google-id',
+    GOOGLE_CLIENT_SECRET: 'google-secret',
+  };
+
+  it('운영 환경에 소셜 로그인 설정이 빠져 있으면 시작하지 않는다', () => {
+    setEnv({
+      NODE_ENV: 'production',
+      DEV_LOGIN: undefined,
+      COOKIE_SECURE: undefined,
+      ...socialLogin,
+      GOOGLE_CLIENT_SECRET: undefined,
+    });
+    expect(() => assertSafeEnv()).toThrow(/GOOGLE_CLIENT_SECRET/);
+  });
+
   it('운영 환경에서 쿠키의 Secure를 끄면 시작하지 않는다', () => {
     setEnv({
+      ...socialLogin,
       NODE_ENV: 'production',
       DEV_LOGIN: undefined,
       COOKIE_SECURE: 'false',
@@ -37,6 +57,7 @@ describe('assertSafeEnv', () => {
 
   it('운영 환경의 안전한 설정은 통과한다', () => {
     setEnv({
+      ...socialLogin,
       NODE_ENV: 'production',
       DEV_LOGIN: undefined,
       COOKIE_SECURE: undefined,

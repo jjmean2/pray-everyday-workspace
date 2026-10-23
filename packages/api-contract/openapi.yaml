@@ -59,6 +59,14 @@ paths:
           description: 로그아웃했다
         default:
           $ref: '#/components/responses/Error'
+  /auth/kakao/login:
+    $ref: '#/components/pathItems/SocialLogin'
+  /auth/kakao/callback:
+    $ref: '#/components/pathItems/SocialCallback'
+  /auth/google/login:
+    $ref: '#/components/pathItems/SocialLogin'
+  /auth/google/callback:
+    $ref: '#/components/pathItems/SocialCallback'
   /auth/dev/login:
     post:
       operationId: devLogin
@@ -261,6 +269,62 @@ paths:
         default:
           $ref: '#/components/responses/Error'
 components:
+  # 소셜 로그인은 제공자마다 경로를 따로 두고 같은 정의를 쓴다. 경로 템플릿(/auth/{provider}/…)으로 두면
+  # 개발용 로그인(/auth/dev/login)이 꺼져 있을 때 404가 아니라 405가 된다
+  pathItems:
+    SocialLogin:
+      get:
+        tags: [auth]
+        summary: 소셜 로그인을 시작한다(제공자의 로그인 화면으로 보낸다)
+        description: |
+          브라우저가 이동하는 주소다. state(구글은 PKCE code verifier도)와 returnTo를 10분짜리 HttpOnly 쿠키에 두고
+          제공자로 보낸다. 제공자의 설정이 없으면 웹의 `/?loginError=not_configured`로 보낸다.
+        parameters:
+          - name: returnTo
+            in: query
+            required: false
+            description: 로그인한 뒤 돌아갈 앱 안의 경로. `/`로 시작해야 하고, 아니면 `/`로 돌아간다
+            # 경로라서 `/`를 인코딩하지 않은 값도 받는다
+            allowReserved: true
+            schema:
+              type: string
+              maxLength: 2000
+        responses:
+          '302':
+            $ref: '#/components/responses/Redirect'
+          default:
+            $ref: '#/components/responses/Error'
+    SocialCallback:
+      get:
+        tags: [auth]
+        summary: 제공자에서 돌아온다(로그인을 마치고 세션 쿠키를 준다)
+        description: |
+          제공자가 브라우저를 보내는 주소다. 성공하면 세션 쿠키를 주고 returnTo로, 실패하면 웹의
+          `/?loginError=<코드>`로 보낸다. 코드: `cancelled`(사용자가 취소), `invalid_state`(state가 없거나 다름,
+          시간 초과 포함), `provider_error`(제공자와의 통신 실패), `not_configured`(설정 없음).
+          제공자가 붙이는 다른 쿼리 파라미터(scope 등)는 무시한다.
+        x-eov-allow-unknown-query-parameters: true
+        parameters:
+          - name: code
+            in: query
+            required: false
+            schema:
+              type: string
+          - name: state
+            in: query
+            required: false
+            schema:
+              type: string
+          - name: error
+            in: query
+            required: false
+            schema:
+              type: string
+        responses:
+          '302':
+            $ref: '#/components/responses/Redirect'
+          default:
+            $ref: '#/components/responses/Error'
   securitySchemes:
     sessionCookie:
       type: apiKey
@@ -287,6 +351,13 @@ components:
         # ID는 소문자로만 쓴다(서버와 클라이언트가 문자열로 비교한다)
         pattern: '^[0-9a-f-]+$'
   responses:
+    Redirect:
+      description: 다른 주소로 보낸다
+      headers:
+        Location:
+          required: true
+          schema:
+            type: string
     NotFound:
       description: 없거나 내 것이 아니다
       content:

@@ -40,6 +40,18 @@ export function assertSafeEnv(): void {
       'NODE_ENV=production에서 DEV_LOGIN=true입니다. 개발용 로그인은 운영 환경에서 켤 수 없습니다.',
     );
   }
+  const missing = [
+    'OAUTH_REDIRECT_BASE',
+    'KAKAO_CLIENT_ID',
+    'KAKAO_CLIENT_SECRET',
+    'GOOGLE_CLIENT_ID',
+    'GOOGLE_CLIENT_SECRET',
+  ].filter((name) => !process.env[name]);
+  if (missing.length > 0) {
+    throw new Error(
+      `NODE_ENV=production에서 소셜 로그인 설정이 없습니다: ${missing.join(', ')}`,
+    );
+  }
   if (!isSecureCookie()) {
     throw new Error(
       'NODE_ENV=production에서 COOKIE_SECURE=false입니다. 운영 환경의 세션 쿠키는 Secure여야 합니다.',

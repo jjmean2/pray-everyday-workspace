@@ -13,14 +13,24 @@ import {
   DatabaseModule,
 } from '../src/database/database.module.js';
 import { sessions } from '../src/database/schema.js';
+import type {
+  OAuthProfile,
+  OAuthProviders,
+} from '../src/auth/oauth/oauth-provider.js';
 import { loadLocalEnv } from '../src/env.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-async function createApp(devLogin: boolean): Promise<INestApplication<App>> {
+async function createApp(
+  devLogin: boolean,
+  oauthProviders: OAuthProviders = {},
+): Promise<INestApplication<App>> {
   loadLocalEnv();
   const moduleRef = await Test.createTestingModule({
-    imports: [DatabaseModule, AuthModule.register({ devLogin })],
+    imports: [
+      DatabaseModule,
+      AuthModule.register({ devLogin, oauthProviders }),
+    ],
   }).compile();
   const app = moduleRef.createNestApplication<INestApplication<App>>();
   configureApp(app, { devLogin });
@@ -220,5 +230,182 @@ describe('개발용 로그인이 꺼져 있으면 (e2e)', () => {
     expect(response.headers['content-type']).toMatch(
       /^application\/problem\+json/,
     );
+  });
+});
+
+describe('소셜 로그인 (e2e, 가짜 제공자)', () => {
+  let app: INestApplication<App>;
+  /** 코드마다 제공자가 돌려줄 프로필. 없는 코드면 제공자 오류를 낸다 */
+  const profiles = new Map<string, OAuthProfile>();
+  const received: { code: string; codeVerifier: string }[] = [];
+
+  beforeAll(async () => {
+    app = await createApp(false, {
+      kakao: {
+        authorizationUrl: (state) =>
+          new URL(`https://kakao.test/authorize?state=${state}`),
+        fetchProfile: async (code, codeVerifier) => {
+          received.push({ code, codeVerifier });
+          const profile = profiles.get(code);
+          if (profile === undefined) {
+            throw new Error('잘못된 코드');
+          }
+          return profile;
+        },
+      },
+    });
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  /** 로그인을 시작하고, 제공자로 보낸 state와 브라우저가 받은 쿠키를 돌려준다. */
+  async function start(returnTo?: string) {
+    const response = await request(app.getHttpServer())
+      .get('/auth/kakao/login')
+      .query(returnTo === undefined ? {} : { returnTo })
+      .expect(302);
+    const location = new URL(response.headers.location!);
+    const cookies = (response.headers['set-cookie'] as unknown as string[]).map(
+      (line) => line.split(';')[0]!,
+    );
+    return { state: location.searchParams.get('state')!, cookies, location };
+  }
+
+  function callback(cookies: string[], query: Record<string, string>) {
+    return request(app.getHttpServer())
+      .get('/auth/kakao/callback')
+      .set('Cookie', cookies)
+      .query(query);
+  }
+
+  it('로그인을 시작하면 state를 쿠키에 두고 제공자로 보낸다', async () => {
+    const { state, cookies, location } = await start('/notes/abc');
+    expect(location.host).toBe('kakao.test');
+    expect(state).not.toBe('');
+    expect(cookies).toContain(`oauth_state=${state}`);
+  });
+
+  it('콜백: 처음이면 사용자를 만들고, 세션 쿠키를 주고 returnTo로 보낸다. 다음 로그인은 같은 사용자이고 이름을 덮어쓰지 않는다', async () => {
+    const providerUserId = `kakao-${randomUUID()}`;
+    profiles.set('code-1', {
+      providerUserId,
+      displayName: '은혜',
+      profileImageUrl: 'https://img.test/a.png',
+    });
+    const first = await start('/notes/abc');
+    const done = await callback(first.cookies, {
+      code: 'code-1',
+      state: first.state,
+      // 제공자가 붙이는 다른 파라미터는 무시한다
+      scope: 'profile_nickname',
+    }).expect(302);
+    expect(done.headers.location).toBe('/notes/abc');
+    const { header } = sessionCookie(done);
+    const me = await request(app.getHttpServer())
+      .get('/auth/me')
+      .set('Cookie', header.split(';')[0]!)
+      .expect(200);
+    expect(me.body).toMatchObject({
+      displayName: '은혜',
+      profileImageUrl: 'https://img.test/a.png',
+    });
+    // 로그인 시작 때 만든 code verifier가 제공자에게 그대로 간다
+    expect(received.at(-1)!.codeVerifier).toBe(
+      decodeURIComponent(
+        first.cookies
+          .find((cookie) => cookie.startsWith('oauth_code_verifier='))!
+          .split('=')[1]!,
+      ),
+    );
+
+    profiles.set('code-2', {
+      providerUserId,
+      displayName: '바뀐 닉네임',
+      profileImageUrl: null,
+    });
+    const second = await start();
+    const again = await callback(second.cookies, {
+      code: 'code-2',
+      state: second.state,
+    }).expect(302);
+    expect(again.headers.location).toBe('/');
+    const meAgain = await request(app.getHttpServer())
+      .get('/auth/me')
+      .set('Cookie', sessionCookie(again).header.split(';')[0]!)
+      .expect(200);
+    expect(meAgain.body).toEqual(me.body);
+  });
+
+  it('이름을 주지 않으면 기본 이름이다', async () => {
+    profiles.set('code-noname', {
+      providerUserId: `kakao-${randomUUID()}`,
+      displayName: null,
+      profileImageUrl: null,
+    });
+    const { state, cookies } = await start();
+    const done = await callback(cookies, {
+      code: 'code-noname',
+      state,
+    }).expect(302);
+    const me = await request(app.getHttpServer())
+      .get('/auth/me')
+      .set('Cookie', sessionCookie(done).header.split(';')[0]!)
+      .expect(200);
+    expect(me.body.displayName).toBe('기도하는 사람');
+  });
+
+  it('returnTo는 /를 인코딩하지 않아도 받는다', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/auth/kakao/login?returnTo=/notes/abc')
+      .expect(302);
+    expect(
+      (response.headers['set-cookie'] as unknown as string[]).some((line) =>
+        line.startsWith('oauth_return_to=%2Fnotes%2Fabc'),
+      ),
+    ).toBe(true);
+  });
+
+  it('다른 사이트로 가는 returnTo는 /로 바꾼다', async () => {
+    profiles.set('code-redirect', {
+      providerUserId: `kakao-${randomUUID()}`,
+      displayName: '은혜',
+      profileImageUrl: null,
+    });
+    const { state, cookies } = await start('//evil.example/path');
+    const done = await callback(cookies, {
+      code: 'code-redirect',
+      state,
+    }).expect(302);
+    expect(done.headers.location).toBe('/');
+  });
+
+  it('실패하면 세션 없이 /?loginError=<코드>로 보낸다', async () => {
+    const cases: [Record<string, string>, boolean, string][] = [
+      // [쿼리, 시작할 때의 쿠키를 보내는가, 오류 코드]
+      [{ error: 'access_denied' }, true, 'cancelled'],
+      [{ code: 'code-1', state: 'other' }, true, 'invalid_state'],
+      [{ code: 'code-1', state: 'x' }, false, 'invalid_state'],
+      [{ code: 'unknown-code' }, true, 'provider_error'],
+    ];
+    for (const [query, withCookies, error] of cases) {
+      const { state, cookies } = await start();
+      const response = await callback(withCookies ? cookies : [], {
+        state,
+        ...query,
+      }).expect(302);
+      expect(response.headers.location).toBe(`/?loginError=${error}`);
+      const raw = (response.headers['set-cookie'] ?? []) as unknown as string[];
+      expect(raw.some((line) => line.startsWith('session='))).toBe(false);
+    }
+  });
+
+  it('설정되지 않은 제공자는 not_configured로, 모르는 제공자는 404다', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/auth/google/login')
+      .expect(302);
+    expect(response.headers.location).toBe('/?loginError=not_configured');
+    await request(app.getHttpServer()).get('/auth/naver/login').expect(404);
   });
 });

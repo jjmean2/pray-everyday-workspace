@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { DevLoginForm } from './dev-login-form';
 import { currentUserQuery, useLogout } from './queries';
+import { SocialLogin } from './social-login';
 
 /** 머리글과 로그인 확인. 로그인했을 때만 children을 보여 준다(웹은 로그인 필수). */
 export function RequireLogin({ children }: { children: ReactNode }) {
@@ -43,6 +44,7 @@ export function RequireLogin({ children }: { children: ReactNode }) {
       {currentUser.isSuccess && currentUser.data === null && (
         <>
           <p className="text-sm text-gray-600">로그인이 필요합니다.</p>
+          <SocialLogin />
           {import.meta.env.DEV && <DevLoginForm />}
         </>
       )}

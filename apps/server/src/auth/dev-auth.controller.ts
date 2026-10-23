@@ -3,18 +3,15 @@ import {
   Controller,
   HttpCode,
   HttpStatus,
-  Inject,
   Post,
   Res,
 } from '@nestjs/common';
 import type { CurrentUser, DevLoginRequest } from '@pray/api-contract';
-import { and, eq } from 'drizzle-orm';
 import type { Response } from 'express';
-import { DATABASE, type Database } from '../database/database.module.js';
-import { authAccounts, users } from '../database/schema.js';
+import { AccountsService } from './accounts.service.js';
 import { toCurrentUser } from './current-user.js';
 import { setSessionCookie } from './session-cookie.js';
-import { SessionService, type UserRecord } from './session.service.js';
+import { SessionService } from './session.service.js';
 
 /**
  * 개발용 로그인(ARCHITECTURE의 "계정과 인증"). DEV_LOGIN=true일 때만 AuthModule이 등록한다.
@@ -24,7 +21,7 @@ import { SessionService, type UserRecord } from './session.service.js';
 @Controller('auth/dev')
 export class DevAuthController {
   constructor(
-    @Inject(DATABASE) private readonly db: Database,
+    private readonly accounts: AccountsService,
     private readonly sessions: SessionService,
   ) {}
 
@@ -34,52 +31,13 @@ export class DevAuthController {
     @Body() { displayName }: DevLoginRequest,
     @Res({ passthrough: true }) response: Response,
   ): Promise<CurrentUser> {
-    const user = await this.findOrCreateUser(displayName);
+    // 표시 이름이 곧 로그인 수단의 ID다
+    const user = await this.accounts.findOrCreateUser('dev', displayName, {
+      displayName,
+      profileImageUrl: null,
+    });
     const { token, expiresAt } = await this.sessions.create(user.id);
     setSessionCookie(response, token, expiresAt);
     return toCurrentUser(user);
-  }
-
-  private async findOrCreateUser(displayName: string): Promise<UserRecord> {
-    const existing = await this.findUser(displayName);
-    if (existing !== undefined) {
-      return existing;
-    }
-    try {
-      return await this.db.transaction(async (tx) => {
-        const [user] = await tx
-          .insert(users)
-          .values({ displayName })
-          .returning();
-        await tx.insert(authAccounts).values({
-          userId: user!.id,
-          provider: 'dev',
-          providerUserId: displayName,
-        });
-        return user!;
-      });
-    } catch (error) {
-      // 같은 이름으로 동시에 로그인해 다른 요청이 먼저 만들었다면 그 사용자를 쓴다
-      const created = await this.findUser(displayName);
-      if (created !== undefined) {
-        return created;
-      }
-      throw error;
-    }
-  }
-
-  private async findUser(displayName: string): Promise<UserRecord | undefined> {
-    const [row] = await this.db
-      .select({ user: users })
-      .from(authAccounts)
-      .innerJoin(users, eq(authAccounts.userId, users.id))
-      .where(
-        and(
-          eq(authAccounts.provider, 'dev'),
-          eq(authAccounts.providerUserId, displayName),
-        ),
-      )
-      .limit(1);
-    return row?.user;
   }
 }

@@ -9,7 +9,7 @@ export default defineConfig({
     port: 6102,
     strictPort: true,
     proxy: {
-      // 로컬 개발에서 /api 요청은 NestJS 서버(3000)로 보낸다. 운영의 경로 구성은 배포 대상과 함께 정한다.
+      // 로컬 개발에서 /api 요청은 접두사를 떼고 NestJS 서버(3000)로 보낸다. 미리보기 배포의 rewrite도 같은 구성이다(ADR-0008).
       '/api': {
         target: 'http://localhost:3000',
         rewrite: (path) => path.replace(/^\/api/, ''),
