@@ -153,6 +153,40 @@ describe('노트 (e2e)', () => {
     expect(removed!.changeSeq).toBeGreaterThan(before!.changeSeq);
   });
 
+  it('저장 응답은 저장한 뒤의 조회 결과와 같다', async () => {
+    const user = await newUser();
+    const live = randomUUID();
+    const gone = randomUUID();
+    await user.put(`/tags/${live}`, { name: '건강' }).expect(200);
+    await user.put(`/tags/${gone}`, { name: '가족' }).expect(200);
+    const noteId = randomUUID();
+    const kept = item('a1', '그대로', { tagIds: [live, gone] });
+    await user
+      .put(
+        `/notes/${noteId}`,
+        noteInput([kept, item('a2', '빠질 것')], { tagIds: [gone] }),
+      )
+      .expect(200);
+    await user.delete(`/tags/${gone}`).expect(204);
+
+    // 안 바뀐 기도제목, 바뀐 기도제목, 새 기도제목(앞쪽 키)이 섞인 저장
+    const saved = await user
+      .put(
+        `/notes/${noteId}`,
+        noteInput(
+          [
+            { ...kept, tagIds: [live] },
+            item('a0', '새로 앞에'),
+            item('a3', '새로 뒤에', { tagIds: [live] }),
+          ],
+          { tagIds: [] },
+        ),
+      )
+      .expect(200);
+    const read = await user.get(`/notes/${noteId}`).expect(200);
+    expect(saved.body).toEqual(read.body);
+  });
+
   it('같은 요청을 다시 보내도 결과가 같다(멱등)', async () => {
     const user = await newUser();
     const id = randomUUID();

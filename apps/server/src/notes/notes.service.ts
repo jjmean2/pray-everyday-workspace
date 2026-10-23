@@ -311,10 +311,13 @@ export class NotesService {
     current: Map<string, ItemRow>,
     live: Set<string>,
   ): Promise<Map<string, ItemRow>> {
-    const changed = inputs.filter((input) => {
-      const row = current.get(input.id);
-      return row === undefined || itemChanged(row, input, live);
-    });
+    // ID 순으로 써서, 두 노트가 같은 새 ID 여럿을 다른 순서로 보내도 서로 기다리다 교착하지 않게 한다
+    const changed = inputs
+      .filter((input) => {
+        const row = current.get(input.id);
+        return row === undefined || itemChanged(row, input, live);
+      })
+      .sort((a, b) => compareSortKeys(a.id, b.id));
     const written = new Map<string, ItemRow>();
     if (changed.length > 0) {
       const rows = await tx

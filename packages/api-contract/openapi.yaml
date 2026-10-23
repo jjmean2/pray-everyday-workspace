@@ -354,7 +354,7 @@ components:
         type: string
         format: uuid
     SortKey:
-      description: 노트 안의 순서를 정하는 분수 인덱스. 문자열 순서대로 정렬한다
+      description: 노트 안의 순서를 정하는 분수 인덱스. fractional-indexing 4의 기본 형식이어야 하고(아니면 400), 바이트 순서로 정렬한다
       type: string
       minLength: 1
       maxLength: 100
