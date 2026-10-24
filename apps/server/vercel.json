@@ -6,10 +6,10 @@
   "ignoreCommand": "[ \"$VERCEL_ENV\" != \"production\" ]",
   "outputDirectory": "public",
   "regions": ["sin1"],
-  "functions": {
-    "api/index.js": {
-      "includeFiles": "node_modules/@pray/api-contract/openapi.yaml"
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api"
     }
-  },
-  "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
+  ]
 }

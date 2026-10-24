@@ -56,3 +56,6 @@ Thumbs.db
 .claude/settings.local.json
 
 /.credentials
+
+# Vercel CLI (프로젝트 연결 정보, 내려받은 환경 변수, 로컬 빌드 결과)
+.vercel/
